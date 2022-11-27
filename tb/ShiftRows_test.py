@@ -34,8 +34,18 @@ class ShiftRowsTest:
         # Call the kernel function from the compiled module
         prg = self.module.get_function("ShiftRowsTest")
 
+        # Calculate block size and grid size
+        block_size = length
+        grid_size = 1
+        if (block_size > 1024):
+            block_size = 1024
+            grid_size = (length - 1) / 1024 + 1;
+
+        blockDim = (block_size, 1, 1)
+        gridDim = (grid_size, 1, 1)
+
         # Call the kernel loaded to the device
-        prg(io_message_gpu, np.uint32(length), block=(1, 1, 1))
+        prg(io_message_gpu, np.uint32(length), block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(message)
@@ -49,7 +59,7 @@ class ShiftRowsTest:
         return res, start.time_till(end) * 10 ** (-3)
 
 
-def test_ShiftRowsTest():
+def test1_ShiftRowsTest():
     # Input array
     hex_in = "63cab7040953d051cd60e0e7ba70e18c"
     byte_in = bytes.fromhex(hex_in)
@@ -62,9 +72,20 @@ def test_ShiftRowsTest():
 
     graphicscomputer = ShiftRowsTest()
     result_gpu = graphicscomputer.shiftrows_gpu(byte_array_in, byte_array_in.size)[0]
-    print(byte_array_in)
-    print(byte_array_ref)
-    print(result_gpu)
     assert np.array_equal(result_gpu, byte_array_ref)
 
-test_ShiftRowsTest()
+def test2_ShiftRowsTest():
+    # Input array
+    hex_in = "63cab7040953d051cd60e0e7ba70e18c63cab7040953d051cd60e0e7ba70e18c"
+    byte_in = bytes.fromhex(hex_in)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    # Reference output
+    hex_ref = "6353e08c0960e104cd70b751bacad0e76353e08c0960e104cd70b751bacad0e7"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+
+    graphicscomputer = ShiftRowsTest()
+    result_gpu = graphicscomputer.shiftrows_gpu(byte_array_in, byte_array_in.size)[0]
+    assert np.array_equal(result_gpu, byte_array_ref)
+

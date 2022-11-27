@@ -40,6 +40,7 @@ __device__ void ShiftRows(char* block)
 __global__ void ShiftRowsTest(char* message, const unsigned int length)
 {
     int idx = (threadIdx.x + blockDim.x * blockIdx.x) * 16; // * 16 because every thread processes an entire block
-    if (idx + 16 < length)
+    
+    if (idx + 16 <= length)
         ShiftRows(message + idx);
 }
