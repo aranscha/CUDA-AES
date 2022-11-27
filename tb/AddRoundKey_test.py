@@ -31,7 +31,7 @@ class AddRoundKeyTest:
 
         # Copy data from host to device
         cuda.memcpy_htod(io_message_gpu, message)
-        cuda.memcpy_htod(io_roundkey_gpu, roundkey)
+        cuda.memcpy_htod(i_roundkey_gpu, roundkey)
 
         # Call the kernel function from the compiled module
         prg = self.module.get_function("AddRoundKeyTest")
@@ -76,6 +76,25 @@ def test1_AddRoundKeyTest():
     byte_ref = bytes.fromhex(hex_ref)
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
 
-    graphicscomputer = ShiftRowsTest()
-    result_gpu = graphicscomputer.shiftrows_gpu(byte_array_in1, byte_array_in2, byte_array_in.size)[0]
+    graphicscomputer = AddRoundKeyTest()
+    result_gpu = graphicscomputer.addroundkey_gpu(byte_array_in1, byte_array_in2, byte_array_in1.size)[0]
+    assert np.array_equal(result_gpu, byte_array_ref)
+
+def test2_AddRoundKeyTest():
+    # Input arrays
+    hex_in1 = "5f72641557f5bc92f7be3b291db9f91a5f72641557f5bc92f7be3b291db9f91a"
+    byte_in1 = bytes.fromhex(hex_in1)
+    byte_array_in1 = np.frombuffer(byte_in1, dtype=np.byte)
+
+    hex_in2 = "000102030405060708090a0b0c0d0e0f"
+    byte_in2 = bytes.fromhex(hex_in2)
+    byte_array_in2 = np.frombuffer(byte_in2, dtype=np.byte)
+
+    # Reference output
+    hex_ref = "5f73661653f0ba95ffb7312211b4f7155f73661653f0ba95ffb7312211b4f715"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+
+    graphicscomputer = AddRoundKeyTest()
+    result_gpu = graphicscomputer.addroundkey_gpu(byte_array_in1, byte_array_in2, byte_array_in1.size)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
