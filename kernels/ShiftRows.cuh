@@ -25,7 +25,7 @@ __device__ void ShiftRows(char* block)
     temp = block[2];
     block[2]  = block[10];
     block[10] = temp;
-    temp = block[6]
+    temp = block[6];
     block[6]  = block[14];
     block[14] = temp;
 
