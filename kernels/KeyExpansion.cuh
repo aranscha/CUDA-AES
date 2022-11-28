@@ -31,10 +31,11 @@ __device__ void RotByte(char* array)
 
 __device__ void SubByte(char* array)
 {
-    array[0] = sbox[array[0]];
-    array[1] = sbox[array[1]];
-    array[2] = sbox[array[2]];
-    array[3] = sbox[array[3]];
+    // Need to convert to unsigned char for correct indexing
+    array[0] = sbox[(unsigned char) array[0]];
+    array[1] = sbox[(unsigned char) array[1]];
+    array[2] = sbox[(unsigned char) array[2]];
+    array[3] = sbox[(unsigned char) array[3]];
 }
 
 /*
@@ -54,7 +55,7 @@ __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
 {
     // First part of the expanded key is equal to the Cipher key.
     for (int i = 0; i < 16; i++)
-        ExpandedKey[i] = Key[i];
+        ExpandedKey[i] = CipherKey[i];
 
     // Obtain the following parts of the ExpandedKey, creating a word (4 bytes)
     // during each iteration
@@ -71,7 +72,7 @@ __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
         {
             RotByte(temp);
             SubByte(temp);
-            temp[0] ^= rcon[i / 4];
+            temp[0] ^= rcon[i / 16];
         }
 
         // The next word of the ExpandedKey is equal to the bitwise EXOR

@@ -65,7 +65,7 @@ class KeyExpansionTest:
 
         # Device memory allocation for input and output arrays
         i_cipherkey_gpu = cuda.mem_alloc_like(cipherkey)
-        o_expandedkey_gpu = cuda.mem_alloc(16 * (nr_rounds + 1) * i_cipherkey_gpu.dtype.itemsize)
+        o_expandedkey_gpu = cuda.mem_alloc(16 * (nr_rounds + 1) * cipherkey.dtype.itemsize)
         i_rcon_gpu = self.module.get_global('rcon')[0]
         i_sbox_gpu = self.module.get_global('sbox')[0]
 
@@ -81,10 +81,10 @@ class KeyExpansionTest:
         blockDim = (1, 1, 1)
 
         # Call the kernel loaded to the device
-        prg(io_message_gpu, np.uint32(length), block=blockDim)
+        prg(i_cipherkey_gpu, o_expandedkey_gpu, block=blockDim)
 
         # Copy result from device to the host
-        res = np.empty(16 * (nr_rounds + 1), i_cipherkey_gpu.dtype)
+        res = np.empty(16 * (nr_rounds + 1), cipherkey.dtype)
         cuda.memcpy_dtoh(res, o_expandedkey_gpu)
 
         # Record execution time (including memory transfers)
@@ -122,3 +122,4 @@ def test_KeyExpansionTest():
     graphicscomputer = KeyExpansionTest()
     result_gpu = graphicscomputer.keyexpansion_gpu(byte_array_in, nr_rounds)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
+
