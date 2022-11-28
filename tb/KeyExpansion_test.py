@@ -52,7 +52,11 @@ class KeyExpansionTest:
         file = open("../kernels/KeyExpansion.cuh", "r")
         kernelwrapper = file.read()
         file.close()
-        self.module = SourceModule(kernelwrapper)
+        enable_test = """
+        #define TEST_KEYEXPANSION
+        """
+
+        self.module = SourceModule(enable_test + kernelwrapper)
 
 
     def keyexpansion_gpu(self, cipherkey, nr_rounds):
@@ -122,4 +126,3 @@ def test_KeyExpansionTest():
     graphicscomputer = KeyExpansionTest()
     result_gpu = graphicscomputer.keyexpansion_gpu(byte_array_in, nr_rounds)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
-

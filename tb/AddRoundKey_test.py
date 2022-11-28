@@ -14,7 +14,12 @@ class AddRoundKeyTest:
         file = open("../kernels/AddRoundKey.cuh", "r")
         kernelwrapper = file.read()
         file.close()
-        self.module = SourceModule(kernelwrapper)
+
+        enable_test = """
+        #define TEST_ROUNDKEY
+        """
+
+        self.module = SourceModule(enable_test + kernelwrapper)
 
 
     def addroundkey_gpu(self, message, roundkey, length):

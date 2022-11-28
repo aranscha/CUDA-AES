@@ -1,7 +1,11 @@
+#ifdef TEST_KEYEXPANSION
+
 #define NR_ROUNDS 10
 
 __constant__ char rcon[256];
 __constant__ char sbox[256];
+
+#endif
 
 /*
    RotByte:
@@ -84,7 +88,11 @@ __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
 
 }
 
+#ifdef TEST_KEYEXPANSION
+
 __global__ void KeyExpansionTest(char* cipherkey, char* expandedkey)
 {
     KeyExpansion(cipherkey, expandedkey);
 }
+
+#endif

@@ -14,7 +14,11 @@ class ShiftRowsTest:
         file = open("../kernels/ShiftRows.cuh", "r")
         kernelwrapper = file.read()
         file.close()
-        self.module = SourceModule(kernelwrapper)
+        enable_test = """
+        #define TEST_SHIFTROWS
+        """
+
+        self.module = SourceModule(enable_test + kernelwrapper)
 
 
     def shiftrows_gpu(self, message, length):
@@ -88,4 +92,3 @@ def test2_ShiftRowsTest():
     graphicscomputer = ShiftRowsTest()
     result_gpu = graphicscomputer.shiftrows_gpu(byte_array_in, byte_array_in.size)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
-

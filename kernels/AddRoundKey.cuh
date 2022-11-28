@@ -29,9 +29,13 @@ __device__ void AddRoundKey(char* block, char* RoundKey)
     block[15] ^= RoundKey[15];
 }
 
+#ifdef TEST_ROUNDKEY
+
 __global__ void AddRoundKeyTest(char* message, char* roundkey, const unsigned int length)
 {
     int idx = (threadIdx.x + blockDim.x * blockIdx.x) * 16; // * 16 because every thread processes an entire block
     if (idx + 16 <= length)
         AddRoundKey(message + idx, roundkey);
 }
+
+#endif
