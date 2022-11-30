@@ -35,6 +35,10 @@ __global__ void AES_naive(char* State, char* CipherKey, const unsigned int State
     if (index == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
+    // Synchronize the threads because thread 0 wrote to shared memory, and
+    // the ExpanedKey will be accessed by each thread in the block.
+    __syncthreads();
+
     // Each thread handles 16 bytes (a single block) of the State
     if (index + 16 <= StateLength)
     {
