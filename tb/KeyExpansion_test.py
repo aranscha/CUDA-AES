@@ -109,11 +109,10 @@ class KeyExpansionTest:
         # Obtain the following parts of the ExpandedKey, creating a word (4 bytes)
         # during each iteration
         i = 16
-        temp = np.empty(4, cipherkey.dtype)
 
         while i < 16 * (nr_rounds + 1):
             # Store the current last word of the ExpandedKey
-            temp = expandedkey[i - 4 : i]
+            temp = expandedkey[i - 4 : i].copy()
 
             # If the current word is a multiple of the key length, then apply
             # a transformation
@@ -132,7 +131,7 @@ class KeyExpansionTest:
                 temp[3] = self.sbox[temp[3].astype(np.uint8)];
 
                 # Apply Rcon transformation
-                temp[0] ^= self.rcon[i / 16];
+                temp[0] ^= self.rcon[i // 16];
 
             # The next word of the ExpandedKey is equal to the bitwise EXOR
             # of the current last word and the word came 4 words before the
@@ -169,8 +168,9 @@ def test1_KeyExpansionTest():
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
 
     graphicscomputer = KeyExpansionTest()
-    result_gpu = graphicscomputer.keyexpansion_gpu(byte_array_in, nr_rounds)[0]
-    assert np.array_equal(result_gpu, byte_array_ref)
+    result_gpu = graphicscomputer.keyexpansion_gpu(byte_array_in, nr_rounds)
+    print("GPU Time for KeyExpansion: ", result_gpu[1])
+    assert np.array_equal(result_gpu[0], byte_array_ref)
 
 def test2_KeyExpansionTest():
     # Number of rounds is 10 for key length 16
@@ -197,5 +197,9 @@ def test2_KeyExpansionTest():
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
 
     graphicscomputer = KeyExpansionTest()
-    result_cpu = graphicscomputer.keyexpansion_cpu(byte_array_in, nr_rounds)[0]
-    assert np.array_equal(result_cpu, byte_array_ref)
+    result_cpu = graphicscomputer.keyexpansion_cpu(byte_array_in, nr_rounds)
+    print("CPU Time for KeyExpansion: ", result_cpu[1])
+    assert np.array_equal(result_cpu[0], byte_array_ref)
+
+test1_KeyExpansionTest()
+test2_KeyExpansionTest()
