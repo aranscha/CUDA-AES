@@ -1,0 +1,130 @@
+import numpy as np
+import pycuda.driver as cuda
+from pycuda.compiler import SourceModule
+import pycuda.autoinit
+
+class MixColumnsTest:
+    def __init__(self):
+        self.getSourceModule()
+
+    def getSourceModule(self):
+        with open("../kernels/MixColumns.cuh",  "r") as file:
+            kernelWrapper = file.read()
+
+        enable_test = r"""
+        #define TEST_MIXCOLUMNS
+        """
+
+        self.module = SourceModule(enable_test + kernelWrapper)
+
+    def mixcolumns_gpu(self, message, length):
+        # Event objects to mark the start and end points
+        start = cuda.Event()
+        end = cuda.Event()
+
+        # Start recording execution time
+        start.record()
+
+        # Device memory allocation for input and output arrays
+        io_message_gpu = cuda.mem_alloc_like(message)
+
+        # Copy data from host to device
+        cuda.memcpy_htod(io_message_gpu, message)
+
+        # Call the kernel function from the compiled module
+        prg = self.module.get_function("mixColumnsTest")
+
+        # Calculate block size and grid size
+        block_size = length
+        grid_size = 1
+        if (block_size > 1024):
+            block_size = 1024
+            grid_size = (length - 1) / 1024 + 1;
+
+        blockDim = (block_size, 1, 1)
+        gridDim = (grid_size, 1, 1)
+
+        # Call the kernel loaded to the device
+        prg(io_message_gpu, np.uint32(length), block=blockDim, grid=gridDim)
+
+        # Copy result from device to the host
+        res = np.empty_like(message)
+        cuda.memcpy_dtoh(res, io_message_gpu)
+
+        # Record execution time (including memory transfers)
+        end.record()
+        end.synchronize()
+
+        # return a tuple of output of sine computation and time taken to execute the operation (in ms).
+        return res, start.time_till(end) * 1e-3
+
+# def test_xtime():
+#     # Event objects to mark the start and end points
+#     start = cuda.Event()
+#     end = cuda.Event()
+
+#     # Start recording execution time
+#     start.record()
+
+#     # Device memory allocation for input and output arrays
+#     io_message_gpu = cuda.mem_alloc(2 * size)
+
+#     # Copy data from host to device
+#     cuda.memcpy_htod(io_message_gpu, message)
+
+#     # Call the kernel function from the compiled module
+#     prg = self.module.get_function("mixColumnsTest")
+
+#     # Calculate block size and grid size
+#     block_size = length
+#     grid_size = 1
+#     if (block_size > 1024):
+#         block_size = 1024
+#         grid_size = (length - 1) / 1024 + 1;
+
+#     blockDim = (block_size, 1, 1)
+#     gridDim = (grid_size, 1, 1)
+
+#     # Call the kernel loaded to the device
+#     prg(io_message_gpu, np.uint32(length), block=blockDim, grid=gridDim)
+
+#     # Copy result from device to the host
+#     res = np.empty_like(message)
+#     cuda.memcpy_dtoh(res, io_message_gpu)
+
+#     # Record execution time (including memory transfers)
+#     end.record()
+#     end.synchronize()
+
+#     # return a tuple of output of sine computation and time taken to execute the operation (in ms).
+#     return res, start.time_till(end) * 1e-3
+
+def test1_mixColumns():
+    # input array
+    hex_in = "6353e08c0960e104cd70b751bacad0e7" 
+    byte_in = bytes.fromhex(hex_in)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    # reference input
+    hex_ref = "5f72641557f5bc92f7be3b291db9f91a"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+    
+    graphicsComputer = MixColumnsTest()
+    result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
+    assert np.array_equal(result_gpu, byte_array_ref)
+
+def test2_mixColumns():
+    # input array
+    hex_in = "3bd92268fc74fb735767cbe0c0590e2d" 
+    byte_in = bytes.fromhex(hex_in)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    # reference input
+    hex_ref = "4c9c1e66f771f0762c3f868e534df256"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+    
+    graphicsComputer = MixColumnsTest()
+    result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
+    assert np.array_equal(result_gpu, byte_array_ref)
