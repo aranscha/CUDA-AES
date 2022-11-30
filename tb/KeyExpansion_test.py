@@ -98,8 +98,53 @@ class KeyExpansionTest:
         # return a tuple of output of sine computation and time taken to execute the operation (in ms).
         return res, start.time_till(end) * 10 ** (-3)
 
+    def keyexpansion_cpu(self, cipherkey, nr_rounds):
+        start = time.time()
 
-def test_KeyExpansionTest():
+        expandedkey = np.empty(16 * (nr_rounds + 1), cipherkey.dtype)
+
+        # First part of the expanded key is equal to the Cipher key.
+        expandedkey[:16] = cipherkey
+
+        # Obtain the following parts of the ExpandedKey, creating a word (4 bytes)
+        # during each iteration
+        i = 16
+        temp = np.empty(4, cipherkey.dtype)
+
+        while i < 16 * (nr_rounds + 1):
+            # Store the current last word of the ExpandedKey
+            temp = expandedkey[i - 4 : i]
+
+            # If the current word is a multiple of the key length, then apply
+            # a transformation
+            if (i % 16 == 0):
+                # Apply RotByte transformation
+                inter = temp[0]
+                temp[0] = temp[1];
+                temp[1] = temp[2];
+                temp[2] = temp[3];
+                temp[3] = inter;
+
+                # Apply SubByte transformation
+                temp[0] = self.sbox[temp[0].astype(np.uint8)];
+                temp[1] = self.sbox[temp[1].astype(np.uint8)];
+                temp[2] = self.sbox[temp[2].astype(np.uint8)];
+                temp[3] = self.sbox[temp[3].astype(np.uint8)];
+
+                # Apply Rcon transformation
+                temp[0] ^= self.rcon[i / 16];
+
+            # The next word of the ExpandedKey is equal to the bitwise EXOR
+            # of the current last word and the word came 4 words before the
+            # word that is currently computed
+            expandedkey[i : i + 4] = expandedkey[i - 16 : i - 12] ^ temp
+            i += 4
+
+        end = time.time()
+        return expandedkey, end - start
+
+
+def test1_KeyExpansionTest():
     # Number of rounds is 10 for key length 16
     nr_rounds = 10
 
@@ -126,3 +171,31 @@ def test_KeyExpansionTest():
     graphicscomputer = KeyExpansionTest()
     result_gpu = graphicscomputer.keyexpansion_gpu(byte_array_in, nr_rounds)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
+
+def test2_KeyExpansionTest():
+    # Number of rounds is 10 for key length 16
+    nr_rounds = 10
+
+    # Input array
+    hex_in = "2b7e151628aed2a6abf7158809cf4f3c"
+    byte_in = bytes.fromhex(hex_in)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    # Reference output
+    hex_ref  = "2b7e151628aed2a6abf7158809cf4f3c"
+    hex_ref += "a0fafe1788542cb123a339392a6c7605"
+    hex_ref += "f2c295f27a96b9435935807a7359f67f"
+    hex_ref += "3d80477d4716fe3e1e237e446d7a883b"
+    hex_ref += "ef44a541a8525b7fb671253bdb0bad00"
+    hex_ref += "d4d1c6f87c839d87caf2b8bc11f915bc"
+    hex_ref += "6d88a37a110b3efddbf98641ca0093fd"
+    hex_ref += "4e54f70e5f5fc9f384a64fb24ea6dc4f"
+    hex_ref += "ead27321b58dbad2312bf5607f8d292f"
+    hex_ref += "ac7766f319fadc2128d12941575c006e"
+    hex_ref += "d014f9a8c9ee2589e13f0cc8b6630ca6"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+
+    graphicscomputer = KeyExpansionTest()
+    result_cpu = graphicscomputer.keyexpansion_cpu(byte_array_in, nr_rounds)[0]
+    assert np.array_equal(result_cpu, byte_array_ref)
