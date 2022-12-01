@@ -58,46 +58,37 @@ class MixColumnsTest:
         # return a tuple of output of sine computation and time taken to execute the operation (in ms).
         return res, start.time_till(end) * 1e-3
 
-# def test_xtime():
-#     # Event objects to mark the start and end points
-#     start = cuda.Event()
-#     end = cuda.Event()
+def test_xtime():
+    messages = np.array([0x57, 0xae, 0x47, 0x8e], dtype=np.byte)
 
-#     # Start recording execution time
-#     start.record()
+    graphicsComputer = MixColumnsTest()
 
-#     # Device memory allocation for input and output arrays
-#     io_message_gpu = cuda.mem_alloc(2 * size)
+    # Device memory allocation for input and output arrays
+    io_message_gpu = cuda.mem_alloc(messages.size * messages.dtype.itemsize)
 
-#     # Copy data from host to device
-#     cuda.memcpy_htod(io_message_gpu, message)
+    # Copy data from host to device
+    cuda.memcpy_htod(io_message_gpu, messages)
 
-#     # Call the kernel function from the compiled module
-#     prg = self.module.get_function("mixColumnsTest")
+    # Call the kernel function from the compiled module
+    prg = graphicsComputer.module.get_function("xtime_test")
 
-#     # Calculate block size and grid size
-#     block_size = length
-#     grid_size = 1
-#     if (block_size > 1024):
-#         block_size = 1024
-#         grid_size = (length - 1) / 1024 + 1;
+    # Calculate block size and grid size
+    block_size = 1
+    grid_size = messages.size
+    blockDim = (block_size, 1, 1)
+    gridDim = (grid_size, 1, 1)
 
-#     blockDim = (block_size, 1, 1)
-#     gridDim = (grid_size, 1, 1)
+    # Call the kernel loaded to the device
+    prg(io_message_gpu, block=blockDim, grid=gridDim)
 
-#     # Call the kernel loaded to the device
-#     prg(io_message_gpu, np.uint32(length), block=blockDim, grid=gridDim)
+    # Copy result from device to the host
+    res = np.empty_like(messages)
+    cuda.memcpy_dtoh(res, io_message_gpu)
+    
+    print(res)
+    print(messages)
 
-#     # Copy result from device to the host
-#     res = np.empty_like(message)
-#     cuda.memcpy_dtoh(res, io_message_gpu)
-
-#     # Record execution time (including memory transfers)
-#     end.record()
-#     end.synchronize()
-
-#     # return a tuple of output of sine computation and time taken to execute the operation (in ms).
-#     return res, start.time_till(end) * 1e-3
+    assert np.array_equal(res, np.array([0xae, 0x47, 0x8e, 0x07], dtype=np.byte))
 
 def test1_mixColumns():
     # input array
@@ -112,6 +103,11 @@ def test1_mixColumns():
     
     graphicsComputer = MixColumnsTest()
     result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
+
+    print(byte_array_ref)
+    print(byte_array_in)
+    print(result_gpu)
+
     assert np.array_equal(result_gpu, byte_array_ref)
 
 def test2_mixColumns():
@@ -124,7 +120,12 @@ def test2_mixColumns():
     hex_ref = "4c9c1e66f771f0762c3f868e534df256"
     byte_ref = bytes.fromhex(hex_ref)
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
-    
+
     graphicsComputer = MixColumnsTest()
     result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
+
+    print(byte_array_ref)
+    # print(byte_array_in)
+    print(result_gpu)
+
     assert np.array_equal(result_gpu, byte_array_ref)
