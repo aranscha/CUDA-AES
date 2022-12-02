@@ -1,10 +1,3 @@
-#define NR_ROUNDS 10
-
-__constant__ char rcon[256];
-__constant__ char sbox[256];
-__constant__ char mul2[256];
-__constant__ char mul3[256];
-
 /*
    AES_naive is a naive implementation of the AES algorithm. It consists of:
     1. KeyExpansion: create the ExpanedKey from the CipherKey
