@@ -1,6 +1,7 @@
 #ifdef TEST_MIXCOLUMNS
 
-__constant__ char mul3[256]; // look-up table for the multiplication of a polynomial with x + 1
+__constant__ char mul2[256];
+__constant__ char mul3[256]; 
 
 # endif
 /*
@@ -16,7 +17,7 @@ __constant__ char mul3[256]; // look-up table for the multiplication of a polyno
             out: poly multiplied by x 
 */
 
-__device__ char xtime(char poly){
+__device__ char xtime(unsigned char poly){
     char out = poly << 1;
     if (!(out & 0x80)){     // polynomial not yet in reduced form
         out ^= 0x1b;
@@ -34,15 +35,20 @@ __device__ void mixColumns(char* block){
     char temp[16]; 
     // char t;
     for (unsigned int col = 0; col < 4; col++){
-        // t = (char) block[4*col] ^ block[4*col + 1] ^ block[4*col+ 2] ^ block[4*col + 3];
-        // temp[4*col] = (char) block[4*col] ^ xtime(block[4*col] ^ block[4*col + 1]) ^ t;
-        // temp[4*col + 1] = (char) block[4*col + 1] ^ xtime(block[4*col + 1] ^ block[4*col + 2]) ^ t;  
-        // temp[4*col + 2] = (char) block[4*col + 2] ^ xtime(block[4*col + 2] ^ block[4*col + 3]) ^ t;  
-        // temp[4*col + 3] = (char) block[4*col + 3] ^ xtime(block[4*col + 3] ^ block[4*col]) ^ t;  
-        temp[4*col] = xtime(block[4*col]) ^ mul3[(unsigned char) block[4*col + 1]] ^ block[4*col + 2] ^ block[4*col + 3];
-        temp[4*col + 1] = block[4*col] ^ xtime(block[4*col + 1]) ^ mul3[(unsigned char) block[4*col + 2]] ^ block[4*col + 3];
-        temp[4*col + 2] = block[4*col] ^ block[4*col + 1] ^ xtime(block[4*col + 2]) ^ mul3[(unsigned char) block[4*col + 3]];
-        temp[4*col + 3] = mul3[(unsigned char) block[4*col]] ^ block[4*col + 1] ^ block[4*col + 2] ^ xtime(block[4*col + 3]);
+        // t = (unsigned char) block[4*col] ^ block[4*col + 1] ^ block[4*col+ 2] ^ block[4*col + 3];
+        // temp[4*col] = (unsigned char) block[4*col] ^ xtime(block[4*col] ^ block[4*col + 1]) ^ t;
+        // temp[4*col + 1] = (unsigned char) block[4*col + 1] ^ xtime(block[4*col + 1] ^ block[4*col + 2]) ^ t;  
+        // temp[4*col + 2] = (unsigned char) block[4*col + 2] ^ xtime(block[4*col + 2] ^ block[4*col + 3]) ^ t;  
+        // temp[4*col + 3] = (unsigned char) block[4*col + 3] ^ xtime(block[4*col + 3] ^ block[4*col]) ^ t;  
+        // temp[4*col] = xtime(block[4*col]) ^ mul3[(unsigned char) block[4*col + 1]] ^ block[4*col + 2] ^ block[4*col + 3];
+        // temp[4*col + 1] = block[4*col] ^ xtime(block[4*col + 1]) ^ mul3[(unsigned char) block[4*col + 2]] ^ block[4*col + 3];
+        // temp[4*col + 2] = block[4*col] ^ block[4*col + 1] ^ xtime(block[4*col + 2]) ^ mul3[(unsigned char) block[4*col + 3]];
+        // temp[4*col + 3] = mul3[(unsigned char) block[4*col]] ^ block[4*col + 1] ^ block[4*col + 2] ^ xtime(block[4*col + 3]);
+        temp[4*col] = mul2[(unsigned char) block[4*col]] ^ mul3[(unsigned char) block[4*col + 1]] ^ block[4*col + 2] ^ block[4*col + 3];
+        temp[4*col + 1] = block[4*col] ^ mul2[(unsigned char) block[4*col + 1]] ^ mul3[(unsigned char) block[4*col + 2]] ^ block[4*col + 3];
+        temp[4*col + 2] = block[4*col] ^ block[4*col + 1] ^ mul2[(unsigned char) block[4*col + 2]] ^ mul3[(unsigned char) block[4*col + 3]];
+        temp[4*col + 3] = mul3[(unsigned char) block[4*col]] ^ block[4*col + 1] ^ block[4*col + 2] ^ mul2[(unsigned char) block[4*col + 3]];
+ 
     }
     
     for (unsigned int i = 0; i < 16; i++){
