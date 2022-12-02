@@ -90,6 +90,12 @@ class AESTest:
         ], dtype=np.byte)
 
     def getSourceModule(self):
+        naive = """
+        #define AES_NAIVE
+        """
+        shared = """
+        #define AES_SHARED
+        """
         file = open("../kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
@@ -118,10 +124,11 @@ class AESTest:
         kernelwrapper += file.read()
         file.close()
 
-        self.module = SourceModule(kernelwrapper)
+        self.module_naive = SourceModule(naive + kernelwrapper)
+        self.module_shared = SourceModule(shared + kernelwrapper)
 
 
-    def AES_gpu(self, state, cipherkey, statelength):
+    def AES_gpu(self, state, cipherkey, statelength, type):
         # Event objects to mark the start and end points
         start = cuda.Event()
         end = cuda.Event()
@@ -138,10 +145,16 @@ class AESTest:
         # Device memory allocation for input and output arrays
         io_state_gpu = cuda.mem_alloc_like(state)
         i_cipherkey_gpu = cuda.mem_alloc_like(cipherkey)
-        i_rcon_gpu = self.module.get_global('rcon')[0]
-        i_sbox_gpu = self.module.get_global('sbox')[0]
-        i_mul2_gpu = self.module.get_global('mul2')[0]
-        i_mul3_gpu = self.module.get_global('mul3')[0]
+        if type == "naive":
+            i_rcon_gpu = self.module_naive.get_global('rcon')[0]
+            i_sbox_gpu = self.module_naive.get_global('sbox')[0]
+            i_mul2_gpu = self.module_naive.get_global('mul2')[0]
+            i_mul3_gpu = self.module_naive.get_global('mul3')[0]
+        else:
+            i_rcon_gpu = self.module_shared.get_global('rcon')[0]
+            i_sbox_gpu = self.module_shared.get_global('sbox')[0]
+            i_mul2_gpu = self.module_shared.get_global('mul2')[0]
+            i_mul3_gpu = self.module_shared.get_global('mul3')[0]
 
         # Copy data from host to device
         cuda.memcpy_htod(io_state_gpu, state)
@@ -152,7 +165,10 @@ class AESTest:
         cuda.memcpy_htod(i_mul3_gpu, self.mul3)
 
         # Call the kernel function from the compiled module
-        prg = self.module.get_function("AES_naive")
+        if type == "naive":
+            prg = self.module_naive.get_function("AES_naive")
+        else:
+            prg = self.module_shared.get_function("AES_shared")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -192,6 +208,7 @@ if __name__ == "__main__":
     nr_iterations = 50
 
     times_gpu_naive = np.array([])
+    times_gpu_shared = np.array([])
     times_cpu = np.array([])
 
     for test_size in test_sizes:
@@ -208,17 +225,21 @@ if __name__ == "__main__":
         byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
 
         times_gpu_naive_it = np.array([])
+        times_gpu_shared_it = np.array([])
         times_cpu_it = np.array([])
 
         for iteration in range(nr_iterations):
-            time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size)[1]
+            time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "naive")[1]
+            time_gpu_shared = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
             times_gpu_naive_it = np.append(times_gpu_naive_it, time_gpu_naive)
+            times_gpu_shared_it = np.append(times_gpu_shared_it, time_gpu_shared)
             times_cpu_it = np.append(times_cpu_it, time_cpu)
 
         times_gpu_naive = np.append(times_gpu_naive, np.mean(times_gpu_naive_it))
+        times_gpu_shared = np.append(times_gpu_shared, np.mean(times_gpu_shared_it))
         times_cpu = np.append(times_cpu, np.mean(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
+    print('GPU (shared) execution times:\n', times_gpu_shared)
     print('CPU execution times:\n', times_cpu)
-
