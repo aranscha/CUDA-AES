@@ -6,7 +6,7 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
-class KeyExpansionTest:
+class RoundTest:
     def __init__(self):
         self.getSourceModule()
 
@@ -87,12 +87,28 @@ class KeyExpansionTest:
         ], dtype=np.byte)
 
     def getSourceModule(self):
-        file = open("../kernels/Round.cuh", "r")
-        kernelwrapper = file.read()
-        file.close()
         enable_test = """
         #define TEST_ROUND
         """
+
+        file = open("../kernels/general.cuh", "r")
+        kernelwrapper = file.read()
+        file.close()
+        file = open("../kernels/SubBytes.cuh", "r")
+        kernelwrapper += file.read()
+        file.close()
+        file = open("../kernels/ShiftRows.cuh", "r")
+        kernelwrapper += file.read()
+        file.close()
+        file = open("../kernels/MixColumns.cuh", "r")
+        kernelwrapper += file.read()
+        file.close()
+        file = open("../kernels/AddRoundKey.cuh", "r")
+        kernelwrapper += file.read()
+        file.close()
+        file = open("../kernels/Round.cuh", "r")
+        kernelwrapper += file.read()
+        file.close()
 
         self.module = SourceModule(enable_test + kernelwrapper)
 
@@ -142,7 +158,7 @@ class KeyExpansionTest:
         return res, start.time_till(end) * 10 ** (-3)
 
 
-def test_RoundTest():
+def test1_RoundTest():
     # Input array
     hex_in = "00102030405060708090a0b0c0d0e0f0"
     byte_in = bytes.fromhex(hex_in)
@@ -154,6 +170,25 @@ def test_RoundTest():
 
     # Reference output
     hex_ref  = "89d810e8855ace682d1843d8cb128fe4"
+    byte_ref = bytes.fromhex(hex_ref)
+    byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
+
+    graphicscomputer = RoundTest()
+    result_gpu = graphicscomputer.round_gpu(byte_array_in, byte_array_key)[0]
+    assert np.array_equal(result_gpu, byte_array_ref)
+
+def test2_RoundTest():
+    # Input array
+    hex_in = "89d810e8855ace682d1843d8cb128fe4"
+    byte_in = bytes.fromhex(hex_in)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    hex_key = "b692cf0b643dbdf1be9bc5006830b3fe"
+    byte_key = bytes.fromhex(hex_key)
+    byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
+
+    # Reference output
+    hex_ref  = "4915598f55e5d7a0daca94fa1f0a63f7"
     byte_ref = bytes.fromhex(hex_ref)
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
 

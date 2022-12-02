@@ -1,18 +1,7 @@
-#ifdef TEST_ROUND
-
-#define NR_ROUNDS 10
-
-__constant__ char rcon[256];
-__constant__ char sbox[256];
-__constant__ char mul2[256];
-__constant__ char mul3[256];
-
-#endif
-
 /*
    Round operation:
    Perform the following operations on the input block:
-    1. ByteSub
+    1. SubBytes
     2. ShiftRows
     3. MixColumns
     4. AddRoundKey
@@ -28,9 +17,9 @@ __constant__ char mul3[256];
 
 __device__ void Round(char* block, char* roundkey)
 {
-    ByteSub(block);
+    SubBytes(block);
     ShiftRows(block);
-    MixColumns(block);
+    mixColumns(block);
     AddRoundKey(block, roundkey);
 }
 
