@@ -27,12 +27,12 @@ __constant__ char mul3[256];
 
 __device__ void FinalRound(char* block, char* roundkey)
 {
-    ByteSub(block);
+    SubBytes(block);
     ShiftRows(block);
     AddRoundKey(block, roundkey);
 }
 
-#ifdef TEST_ROUND
+#ifdef FINALTEST_ROUND
 
 __global__ void FinalRoundTest(char* block, char* roundkey)
 {

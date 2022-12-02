@@ -38,6 +38,6 @@ __global__ void AES_naive(char* State, char* CipherKey, const unsigned int State
         AddRoundKey(State + index, ExpandedKey);
         for (int i = 1; i < NR_ROUNDS; i++)
             Round(State + index, ExpandedKey + 16 * i);
-        FinalRound(State + index, ExpandedKey + 16 * NR_ROUNDS)
+        FinalRound(State + index, ExpandedKey + 16 * NR_ROUNDS);
     }
 }
