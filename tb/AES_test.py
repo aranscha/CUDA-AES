@@ -117,7 +117,7 @@ class AESTest:
         file = open("../kernels/FinalRound.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/AES_naive.cuh", "r")
+        file = open("../kernels/AES.cuh", "r")
         kernelwrapper += file.read()
         file.close()
 
