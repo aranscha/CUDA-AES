@@ -6,6 +6,9 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+#import Python implementation of AES
+from ref.AES_Python import AES_Python
+
 class AESTest:
     def __init__(self):
         self.getSourceModule()
@@ -178,19 +181,23 @@ class AESTest:
 # Measure timing for different sizes of messages
 if __name__ == "__main__":
     # Test sizes
-    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144]
+    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864, 268435456]
 
     # Create an instance of the AESTest class
     graphicscomputer = AESTest()
+    # Create AES_Python instance
+    aes_cpu = AES_Python()
 
     # Define the number of iterations
     nr_iterations = 50
 
     times_gpu_naive = np.array([])
+    times_cpu = np.array([])
+
     for test_size in test_sizes:
         # Get test input for this case
-        file = open(f"test_cases/test_case_{length}.txt", "r")
-        hex_in = file.read(string)
+        file = open(f"test_cases/test_case_{test_size}.txt", "r")
+        hex_in = file.read()
         file.close()
         byte_in = bytes.fromhex(hex_in)
         byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
@@ -201,10 +208,17 @@ if __name__ == "__main__":
         byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
 
         times_gpu_naive_it = np.array([])
+        times_cpu_it = np.array([])
+
         for iteration in range(nr_iterations):
             time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size)[1]
+            time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
             times_gpu_naive_it = np.append(times_gpu_naive_it, time_gpu_naive)
+            times_cpu_it = np.append(times_cpu_it, time_cpu)
 
         times_gpu_naive = np.append(times_gpu_naive, np.mean(times_gpu_naive_it))
+        times_cpu = np.append(times_cpu, np.mean(times_cpu_it))
 
-    print('GPU (naive) execution times:             ', times_gpu_naive)
+    print('GPU (naive) execution times:\n', times_gpu_naive)
+    print('CPU execution times:\n', times_cpu)
+
