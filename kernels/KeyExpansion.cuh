@@ -59,7 +59,11 @@ __device__ void SubByte(char* array, char* sbox)
     - ExpandedKey: char array of length 16 * (NR_ROUNDS + 1)
 */
 
+#ifndef AES_SHARED_COALESCED_NOCONST
+__device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
+#else
 __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey, char* rcon, char* sbox)
+#endif
 {
     // First part of the expanded key is equal to the Cipher key.
     for (int i = 0; i < 16; i++)
