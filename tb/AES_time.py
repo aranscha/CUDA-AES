@@ -96,6 +96,10 @@ class AESTest:
         shared = """
         #define AES_SHARED
         """
+        shared_coalesced = """
+        #define AES_SHARED_COALESCED
+        """
+
         file = open("../kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
@@ -126,6 +130,7 @@ class AESTest:
 
         self.module_naive = SourceModule(naive + kernelwrapper)
         self.module_shared = SourceModule(shared + kernelwrapper)
+        self.module_shared_coalesced = SourceModule(shared_coalesced + kernelwrapper)
 
 
     def AES_gpu(self, state, cipherkey, statelength, type):
@@ -150,11 +155,16 @@ class AESTest:
             i_sbox_gpu = self.module_naive.get_global('sbox')[0]
             i_mul2_gpu = self.module_naive.get_global('mul2')[0]
             i_mul3_gpu = self.module_naive.get_global('mul3')[0]
-        else:
+        elif type == "shared":
             i_rcon_gpu = self.module_shared.get_global('rcon')[0]
             i_sbox_gpu = self.module_shared.get_global('sbox')[0]
             i_mul2_gpu = self.module_shared.get_global('mul2')[0]
             i_mul3_gpu = self.module_shared.get_global('mul3')[0]
+        else:
+            i_rcon_gpu = self.module_shared_coalesced.get_global('rcon')[0]
+            i_sbox_gpu = self.module_shared_coalesced.get_global('sbox')[0]
+            i_mul2_gpu = self.module_shared_coalesced.get_global('mul2')[0]
+            i_mul3_gpu = self.module_shared_coalesced.get_global('mul3')[0]
 
         # Copy data from host to device
         cuda.memcpy_htod(io_state_gpu, state)
@@ -167,8 +177,10 @@ class AESTest:
         # Call the kernel function from the compiled module
         if type == "naive":
             prg = self.module_naive.get_function("AES_naive")
-        else:
+        elif type == "shared":
             prg = self.module_shared.get_function("AES_shared")
+        else:
+            prg = self.module_shared_coalesced.get_function("AES_shared_coalesced")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -209,6 +221,7 @@ if __name__ == "__main__":
 
     times_gpu_naive = np.array([])
     times_gpu_shared = np.array([])
+    times_gpu_shared_coalesced = np.array([])
     times_cpu = np.array([])
 
     for test_size in test_sizes:
@@ -226,20 +239,26 @@ if __name__ == "__main__":
 
         times_gpu_naive_it = np.array([])
         times_gpu_shared_it = np.array([])
+        times_gpu_shared_coalesced_it = np.array([])
         times_cpu_it = np.array([])
 
         for iteration in range(nr_iterations):
             time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "naive")[1]
             time_gpu_shared = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared")[1]
+            time_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
+
             times_gpu_naive_it = np.append(times_gpu_naive_it, time_gpu_naive)
             times_gpu_shared_it = np.append(times_gpu_shared_it, time_gpu_shared)
+            times_gpu_shared_coalesced_it = np.append(times_gpu_shared_it, time_gpu_shared)
             times_cpu_it = np.append(times_cpu_it, time_cpu)
 
         times_gpu_naive = np.append(times_gpu_naive, np.mean(times_gpu_naive_it))
         times_gpu_shared = np.append(times_gpu_shared, np.mean(times_gpu_shared_it))
+        times_gpu_shared_coalesced = np.append(times_gpu_shared_coalesced, np.mean(times_gpu_shared_coalesced_it))
         times_cpu = np.append(times_cpu, np.mean(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
     print('GPU (shared) execution times:\n', times_gpu_shared)
+    print('GPU (shared & coalesced) execution times:\n', times_gpu_shared_coalesced)
     print('CPU execution times:\n', times_cpu)

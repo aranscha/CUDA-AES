@@ -61,8 +61,8 @@ __global__ void AES_shared(char* State, char* CipherKey, const unsigned int Stat
     __shared__ char StateShared[16*1024];
     int local_index = threadIdx.x * 16;
     if (index + 16 <= StateLength)
-	for (int j = 0; j < 16; j++)
-	    StateShared[local_index + j] = State[index + j];
+	      for (int j = 0; j < 16; j++)
+	          StateShared[local_index + j] = State[index + j];
 
     // Synchronize the threads because thread 0 wrote to shared memory, and
     // the ExpanedKey will be accessed by each thread in the block.
@@ -81,6 +81,44 @@ __global__ void AES_shared(char* State, char* CipherKey, const unsigned int Stat
     if (index + 16 <= StateLength)
         for (int j = 0; j < 16; j++)
             State[index + j] = StateShared[local_index + j];
+}
+
+#endif
+
+#ifdef AES_SHARED_COALESCED
+
+__global__ void AES_shared_coalesced(char* State, char* CipherKey, const unsigned int StateLength)
+{
+    int index = (threadIdx.x + blockDim.x * blockIdx.x) * 16; // * 16 because every thread processes an entire block
+
+    // Only a single thread from the thread block must calculate the ExpanedKey
+    __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
+    if (index == 0)
+        KeyExpansion(CipherKey, ExpandedKey);
+
+    // Load State into shared memory - coalesced
+    __shared__ char StateShared[16*1024];
+    if (index + 16 <= StateLength)
+      	for (int j = 0; j < 16; j++)
+	          StateShared[j * blockDim.x + threadIdx.x] = State[blockIdx.x * blockDim.x * 16 + j * blockDim.x + threadIdx.x];
+
+    // Synchronize the threads because thread 0 wrote to shared memory, and
+    // the ExpanedKey will be accessed by each thread in the block.
+    __syncthreads();
+
+    // Each thread handles 16 bytes (a single block) of the State
+    if (index + 16 <= StateLength)
+    {
+        AddRoundKey(StateShared + local_index, ExpandedKey);
+        for (int i = 1; i < NR_ROUNDS; i++)
+            Round(StateShared + local_index, ExpandedKey + 16 * i);
+        FinalRound(StateShared + local_index, ExpandedKey + 16 * NR_ROUNDS);
+    }
+
+    // Write back the results to State - coalesced
+    if (index + 16 <= StateLength)
+        for (int j = 0; j < 16; j++)
+            State[blockIdx.x * blockDim.x * 16 + j * blockDim.x + threadIdx.x] = StateShared[j * blockDim.x + threadIdx.x];
 }
 
 #endif
