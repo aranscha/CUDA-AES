@@ -25,21 +25,21 @@ __constant__ char mul3[256];
     - block: char array of length 16
 */
 
-//#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef AES_SHARED_COALESCED_NOCONST
 __device__ void FinalRound(char* block, char* roundkey)
 {
     SubBytes(block);
     ShiftRows(block);
     AddRoundKey(block, roundkey);
 }
-//#else
-//__device__ void FinalRound(char* block, char* roundkey, char* sbox)
-//{
-//    SubBytes(block, sbox);
-//    ShiftRows(block);
-//    AddRoundKey(block, roundkey);
-//}
-//#endif
+#else
+__device__ void FinalRound(char* block, char* roundkey, char* sbox)
+{
+    SubBytes(block, sbox);
+    ShiftRows(block);
+    AddRoundKey(block, roundkey);
+}
+#endif
 
 #ifdef FINALTEST_ROUND
 

@@ -31,11 +31,11 @@ __device__ char mul3(char poly){
 }
 */
 
-//#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef AES_SHARED_COALESCED_NOCONST
 __device__ void mixColumns(char* block){
-//#else
-//__device__ void mixColumns(char* block, char* mul2, char* mul3){
-//#endif
+#else
+__device__ void mixColumns(char* block, char* mul2, char* mul3){
+#endif
 
     char temp[16];
     // char t;

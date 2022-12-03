@@ -27,7 +27,7 @@ __global__ void AES_naive(char* State, char* CipherKey, const unsigned int State
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (index == 0)
+    if (threadIdx.x == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Synchronize the threads because thread 0 wrote to shared memory, and
@@ -54,7 +54,7 @@ __global__ void AES_shared(char* State, char* CipherKey, const unsigned int Stat
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (index == 0)
+    if (threadIdx.x == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Load State into shared memory - not yet coalesced
@@ -93,7 +93,7 @@ __global__ void AES_shared_coalesced(char* State, char* CipherKey, const unsigne
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (index == 0)
+    if (threadIdx.x == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Load State into shared memory - coalesced
@@ -140,7 +140,7 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
 
     if (blockDim.x < 256) {
         if (threadIdx.x == 0) {
-            for (int i = 0; i < 256; i++) {
+            for (int i = 0; i < 1; i++) {
                 rcon[i] = grcon[i];
                 sbox[i] = gsbox[i];
                 mul2[i] = gmul2[i];
@@ -154,11 +154,12 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
             mul2[threadIdx.x] = gmul2[threadIdx.x];
             mul3[threadIdx.x] = gmul3[threadIdx.x];
         }
+        __syncthreads();
     }
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (index == 0)
+    if (threadIdx.x == 0)
         KeyExpansion(CipherKey, ExpandedKey, rcon, sbox);
 
     // Load State into shared memory - coalesced
