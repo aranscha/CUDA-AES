@@ -15,6 +15,7 @@
     - block: char array of length 16
 */
 
+#ifndef AES_SHARED_COALESCED_NOCONST
 __device__ void Round(char* block, char* roundkey)
 {
     SubBytes(block);
@@ -22,6 +23,15 @@ __device__ void Round(char* block, char* roundkey)
     mixColumns(block);
     AddRoundKey(block, roundkey);
 }
+#else
+__device__ void Round(char* block, char* roundkey, char* sbox, char* mul2, char* mul3)
+{
+    SubBytes(block, sbox);
+    ShiftRows(block);
+    mixColumns(block, mul2, mul3);
+    AddRoundKey(block, roundkey);
+}
+#endif
 
 #ifdef TEST_ROUND
 

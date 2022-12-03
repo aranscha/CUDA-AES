@@ -4,7 +4,11 @@ __constant__ char sbox[256];
 
 #endif
 
+#ifndef AES_SHARED_COALESCED_NOCONST
 __device__ void SubBytes(char* block){
+#else
+__device__ void SubBytes(char* block, char* sbox){
+#endif
     for(unsigned int i = 0; i < 16; i++){
         block[i] = sbox[(unsigned char) block[i]];
     }

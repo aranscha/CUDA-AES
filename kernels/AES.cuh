@@ -159,7 +159,7 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
     if (threadIdx.x == 0)
-        KeyExpansion(CipherKey, ExpandedKey);
+        KeyExpansion(CipherKey, ExpandedKey, rcon, sbox);
 
     // Load State into shared memory - coalesced
     __shared__ char StateShared[16*1024];
@@ -176,8 +176,8 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
     {
         AddRoundKey(StateShared + local_index, ExpandedKey);
         for (int i = 1; i < NR_ROUNDS; i++)
-            Round(StateShared + local_index, ExpandedKey + 16 * i);
-        FinalRound(StateShared + local_index, ExpandedKey + 16 * NR_ROUNDS);
+            Round(StateShared + local_index, ExpandedKey + 16 * i, sbox, mul2, mul3);
+        FinalRound(StateShared + local_index, ExpandedKey + 16 * NR_ROUNDS, sbox);
     }
 
     // Synchronize the threads

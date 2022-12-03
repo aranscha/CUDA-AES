@@ -33,7 +33,11 @@ __device__ void RotByte(char* array)
     - array: char array of length 4
 */
 
+#ifndef AES_SHARED_COALESCED_NOCONST
 __device__ void SubByte(char* array)
+#else
+__device__ void SubByte(char* array, char* sbox)
+#endif
 {
     // Need to convert to unsigned char for correct indexing
     array[0] = sbox[(unsigned char) array[0]];
@@ -55,7 +59,7 @@ __device__ void SubByte(char* array)
     - ExpandedKey: char array of length 16 * (NR_ROUNDS + 1)
 */
 
-__device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
+__device__ void KeyExpansion(char* CipherKey, char* ExpandedKey, char* rcon, char* sbox)
 {
     // First part of the expanded key is equal to the Cipher key.
     for (int i = 0; i < 16; i++)
@@ -75,7 +79,11 @@ __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
         if (i % 16 == 0)
         {
             RotByte(temp);
+#ifndef AES_SHARED_COALESCED_NOCONST
             SubByte(temp);
+#else
+            SubByte(temp, sbox);
+#endif
             temp[0] ^= rcon[i / 16];
         }
 
