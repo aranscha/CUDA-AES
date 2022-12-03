@@ -197,7 +197,7 @@ class AESTest:
 # Measure timing for different sizes of messages
 if __name__ == "__main__":
     # Test sizes
-    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864, 268435456]
+    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864]
 
     # Create an instance of the AESTest class
     graphicscomputer = AESTest()
