@@ -208,7 +208,7 @@ class AESTest:
         if type != "AES_shared_coalesced_noconst":
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
         else:
-            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu block=blockDim, grid=gridDim)
+            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(state)
