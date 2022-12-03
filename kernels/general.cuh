@@ -1,6 +1,6 @@
 #define NR_ROUNDS 10
 
-#ifndef NOCONST
+#ifndef AES_SHARED_COALESCED_NOCONST
 
 __constant__ char rcon[256];
 __constant__ char sbox[256];

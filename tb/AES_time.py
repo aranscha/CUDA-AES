@@ -100,6 +100,10 @@ class AESTest:
         #define AES_SHARED_COALESCED
         """
 
+        shared_coalesced_noconst = """
+        #define AES_SHARED_COALESCED_NOCONST
+        """
+
         file = open("../kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
@@ -131,6 +135,7 @@ class AESTest:
         self.module_naive = SourceModule(naive + kernelwrapper)
         self.module_shared = SourceModule(shared + kernelwrapper)
         self.module_shared_coalesced = SourceModule(shared_coalesced + kernelwrapper)
+        self.module_shared_coalesced_noconst = SourceModule(shared_coalesced_noconst + kernelwrapper)
 
 
     def AES_gpu(self, state, cipherkey, statelength, type):
@@ -160,11 +165,16 @@ class AESTest:
             i_sbox_gpu = self.module_shared.get_global('sbox')[0]
             i_mul2_gpu = self.module_shared.get_global('mul2')[0]
             i_mul3_gpu = self.module_shared.get_global('mul3')[0]
-        else:
+        elif type == "shared_coalesced":
             i_rcon_gpu = self.module_shared_coalesced.get_global('rcon')[0]
             i_sbox_gpu = self.module_shared_coalesced.get_global('sbox')[0]
             i_mul2_gpu = self.module_shared_coalesced.get_global('mul2')[0]
             i_mul3_gpu = self.module_shared_coalesced.get_global('mul3')[0]
+        else:
+            i_rcon_gpu = cuda.mem_alloc_like(self.rcon)
+            i_sbox_gpu = cuda.mem_alloc_like(self.sbox)
+            i_mul2_gpu = cuda.mem_alloc_like(self.mul2)
+            i_mul3_gpu = cuda.mem_alloc_like(self.mul3)
 
         # Copy data from host to device
         cuda.memcpy_htod(io_state_gpu, state)
@@ -179,8 +189,10 @@ class AESTest:
             prg = self.module_naive.get_function("AES_naive")
         elif type == "shared":
             prg = self.module_shared.get_function("AES_shared")
-        else:
+        elif type == "shared_coalesced":
             prg = self.module_shared_coalesced.get_function("AES_shared_coalesced")
+        else:
+            prg = self.module_shared_coalesced_noconst.get_function("AES_shared_coalesced_noconst")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -193,7 +205,10 @@ class AESTest:
         gridDim = (grid_size, 1, 1)
 
         # Call the kernel loaded to the device
-        prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
+        if type != "AES_shared_coalesced_noconst":
+            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
+        else:
+            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(state)
@@ -222,6 +237,7 @@ if __name__ == "__main__":
     times_gpu_naive = np.array([])
     times_gpu_shared = np.array([])
     times_gpu_shared_coalesced = np.array([])
+    times_gpu_shared_coalesced_noconst = np.array([])
     times_cpu = np.array([])
 
     for test_size in test_sizes:
@@ -240,25 +256,30 @@ if __name__ == "__main__":
         times_gpu_naive_it = np.array([])
         times_gpu_shared_it = np.array([])
         times_gpu_shared_coalesced_it = np.array([])
+        times_gpu_shared_coalesced_noconst_it = np.array([])
         times_cpu_it = np.array([])
 
         for iteration in range(nr_iterations):
             time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "naive")[1]
             time_gpu_shared = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared")[1]
             time_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[1]
+            time_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
 
             times_gpu_naive_it = np.append(times_gpu_naive_it, time_gpu_naive)
             times_gpu_shared_it = np.append(times_gpu_shared_it, time_gpu_shared)
             times_gpu_shared_coalesced_it = np.append(times_gpu_shared_it, time_gpu_shared)
+            times_gpu_shared_coalesced_noconst_it = np.append(times_gpu_shared_it_noconst, time_gpu_shared_noconst)
             times_cpu_it = np.append(times_cpu_it, time_cpu)
 
         times_gpu_naive = np.append(times_gpu_naive, np.mean(times_gpu_naive_it))
         times_gpu_shared = np.append(times_gpu_shared, np.mean(times_gpu_shared_it))
         times_gpu_shared_coalesced = np.append(times_gpu_shared_coalesced, np.mean(times_gpu_shared_coalesced_it))
+        times_gpu_shared_coalesced_noconst = np.append(times_gpu_shared_coalesced_noconst, np.mean(times_gpu_shared_coalesced_noconst_it))
         times_cpu = np.append(times_cpu, np.mean(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
     print('GPU (shared) execution times:\n', times_gpu_shared)
     print('GPU (shared & coalesced) execution times:\n', times_gpu_shared_coalesced)
+    print('GPU (shared & coalesced, no constant mem) execution times:\n', times_gpu_shared_coalesced_noconst)
     print('CPU execution times:\n', times_cpu)

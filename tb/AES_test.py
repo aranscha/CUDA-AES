@@ -97,6 +97,10 @@ class AESTest:
         #define AES_SHARED_COALESCED
         """
 
+        shared_coalesced_noconst = """
+        #define AES_SHARED_COALESCED_NOCONST
+        """
+
         file = open("../kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
@@ -128,6 +132,7 @@ class AESTest:
         self.module_naive = SourceModule(naive + kernelwrapper)
         self.module_shared = SourceModule(shared + kernelwrapper)
         self.module_shared_coalesced = SourceModule(shared_coalesced + kernelwrapper)
+        self.module_shared_coalesced_noconst = SourceModule(shared_coalesced_noconst + kernelwrapper)
 
 
     def AES_gpu(self, state, cipherkey, statelength, type):
@@ -157,11 +162,16 @@ class AESTest:
             i_sbox_gpu = self.module_shared.get_global('sbox')[0]
             i_mul2_gpu = self.module_shared.get_global('mul2')[0]
             i_mul3_gpu = self.module_shared.get_global('mul3')[0]
-        else:
+        elif type == "shared_coalesced":
             i_rcon_gpu = self.module_shared_coalesced.get_global('rcon')[0]
             i_sbox_gpu = self.module_shared_coalesced.get_global('sbox')[0]
             i_mul2_gpu = self.module_shared_coalesced.get_global('mul2')[0]
             i_mul3_gpu = self.module_shared_coalesced.get_global('mul3')[0]
+        else:
+            i_rcon_gpu = cuda.mem_alloc_like(self.rcon)
+            i_sbox_gpu = cuda.mem_alloc_like(self.sbox)
+            i_mul2_gpu = cuda.mem_alloc_like(self.mul2)
+            i_mul3_gpu = cuda.mem_alloc_like(self.mul3)
 
         # Copy data from host to device
         cuda.memcpy_htod(io_state_gpu, state)
@@ -176,8 +186,10 @@ class AESTest:
             prg = self.module_naive.get_function("AES_naive")
         elif type == "shared":
             prg = self.module_shared.get_function("AES_shared")
-        else:
+        elif type == "shared_coalesced":
             prg = self.module_shared_coalesced.get_function("AES_shared_coalesced")
+        else:
+            prg = self.module_shared_coalesced_noconst.get_function("AES_shared_coalesced_noconst")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -190,7 +202,10 @@ class AESTest:
         gridDim = (grid_size, 1, 1)
 
         # Call the kernel loaded to the device
-        prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
+        if type != "AES_shared_coalesced_noconst":
+            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
+        else:
+            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(state)
@@ -226,6 +241,8 @@ def test1_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test functionality on two blocks
 def test2_RoundTest():
@@ -250,6 +267,8 @@ def test2_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 32, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 32, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test for a longer input message
 def test3_RoundTest():
@@ -274,6 +293,8 @@ def test3_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 192, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 192, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test padding for a single block
 def test4_RoundTest():
@@ -298,6 +319,8 @@ def test4_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test padding for a two blocks
 def test5_RoundTest():
@@ -322,6 +345,8 @@ def test5_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test for longer message, not necessarily length that is a multiple of 16 bytes
 def test6_RoundTest():
@@ -445,6 +470,8 @@ def test6_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test another longer message
 def test7_RoundTest():
@@ -583,3 +610,5 @@ def test7_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
+    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
