@@ -241,8 +241,8 @@ def test1_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test functionality on two blocks
 def test2_RoundTest():
@@ -267,8 +267,8 @@ def test2_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 32, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 32, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 32, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test for a longer input message
 def test3_RoundTest():
@@ -293,8 +293,8 @@ def test3_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 192, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 192, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 192, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test padding for a single block
 def test4_RoundTest():
@@ -319,8 +319,8 @@ def test4_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test padding for a two blocks
 def test5_RoundTest():
@@ -345,8 +345,8 @@ def test5_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test for longer message, not necessarily length that is a multiple of 16 bytes
 def test6_RoundTest():
@@ -470,8 +470,8 @@ def test6_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
 
 # Test another longer message
 def test7_RoundTest():
@@ -610,5 +610,5 @@ def test7_RoundTest():
     assert np.array_equal(result_gpu_shared, byte_array_ref)
     result_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[0]
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
-    result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
-    assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+    #result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
+    #assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
