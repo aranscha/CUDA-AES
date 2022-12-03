@@ -102,11 +102,11 @@ __global__ void AES_shared_coalesced(char* State, char* CipherKey, const unsigne
       	for (int j = 0; j < 16; j++)
 	          StateShared[j * blockDim.x + threadIdx.x] = State[blockIdx.x * blockDim.x * 16 + j * blockDim.x + threadIdx.x];
 
-    // Synchronize the threads because thread 0 wrote to shared memory, and
-    // the ExpanedKey will be accessed by each thread in the block.
+    // Synchronize the threads
     __syncthreads();
 
     // Each thread handles 16 bytes (a single block) of the State
+    int local_index = threadIdx.x * 16;
     if (index + 16 <= StateLength)
     {
         AddRoundKey(StateShared + local_index, ExpandedKey);
@@ -114,6 +114,9 @@ __global__ void AES_shared_coalesced(char* State, char* CipherKey, const unsigne
             Round(StateShared + local_index, ExpandedKey + 16 * i);
         FinalRound(StateShared + local_index, ExpandedKey + 16 * NR_ROUNDS);
     }
+
+    // Synchronize the threads
+    __syncthreads();
 
     // Write back the results to State - coalesced
     if (index + 16 <= StateLength)
