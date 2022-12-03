@@ -132,7 +132,7 @@ class AESTest:
         self.module_naive = SourceModule(naive + kernelwrapper)
         self.module_shared = SourceModule(shared + kernelwrapper)
         self.module_shared_coalesced = SourceModule(shared_coalesced + kernelwrapper)
-        self.module_shared_coalesced_noconst = SourceModule(shared_coalesced_noconst + kernelwrapper)
+        #self.module_shared_coalesced_noconst = SourceModule(shared_coalesced_noconst + kernelwrapper)
 
 
     def AES_gpu(self, state, cipherkey, statelength, type):
@@ -188,8 +188,8 @@ class AESTest:
             prg = self.module_shared.get_function("AES_shared")
         elif type == "shared_coalesced":
             prg = self.module_shared_coalesced.get_function("AES_shared_coalesced")
-        else:
-            prg = self.module_shared_coalesced_noconst.get_function("AES_shared_coalesced_noconst")
+        #else:
+        #    prg = self.module_shared_coalesced_noconst.get_function("AES_shared_coalesced_noconst")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -204,8 +204,8 @@ class AESTest:
         # Call the kernel loaded to the device
         if type != "AES_shared_coalesced_noconst":
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
-        else:
-            prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
+        #else:
+        #    prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(state)

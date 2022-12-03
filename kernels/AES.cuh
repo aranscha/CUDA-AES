@@ -27,7 +27,7 @@ __global__ void AES_naive(char* State, char* CipherKey, const unsigned int State
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (threadIdx.x == 0)
+    if (index == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Synchronize the threads because thread 0 wrote to shared memory, and
@@ -54,7 +54,7 @@ __global__ void AES_shared(char* State, char* CipherKey, const unsigned int Stat
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (threadIdx.x == 0)
+    if (index == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Load State into shared memory - not yet coalesced
@@ -93,7 +93,7 @@ __global__ void AES_shared_coalesced(char* State, char* CipherKey, const unsigne
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (threadIdx.x == 0)
+    if (index == 0)
         KeyExpansion(CipherKey, ExpandedKey);
 
     // Load State into shared memory - coalesced
@@ -158,7 +158,7 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
-    if (threadIdx.x == 0)
+    if (index == 0)
         KeyExpansion(CipherKey, ExpandedKey, rcon, sbox);
 
     // Load State into shared memory - coalesced
