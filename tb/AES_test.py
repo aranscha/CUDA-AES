@@ -612,3 +612,66 @@ def test7_RoundTest():
     assert np.array_equal(result_gpu_shared_coalesced, byte_array_ref)
     result_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[0]
     assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
+
+# Measure timing for different sizes of messages
+if __name__ == "__main__":
+    # Test sizes
+    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864]
+
+    # Create an instance of the AESTest class
+    graphicscomputer = AESTest()
+    # Create AES_Python instance
+    aes_cpu = AES_Python()
+
+    # Define the number of iterations
+    nr_iterations = 20
+
+    times_gpu_naive = []
+    times_gpu_shared = []
+    times_gpu_shared_coalesced = []
+    times_gpu_shared_coalesced_noconst = []
+    times_cpu = []
+
+    for test_size in tqdm(test_sizes):
+        # Get test input for this case
+        file = open(f"test_cases/test_case_{test_size}.txt", "r")
+        hex_in = file.read()
+        file.close()
+        byte_in = bytes.fromhex(hex_in)
+        byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+        # Get test key
+        hex_key = "000102030405060708090a0b0c0d0e0f"
+        byte_key = bytes.fromhex(hex_key)
+        byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
+
+        times_gpu_naive_it = []
+        times_gpu_shared_it = []
+        times_gpu_shared_coalesced_it = []
+        times_gpu_shared_coalesced_noconst_it = []
+        times_cpu_it = []
+
+        for iteration in range(nr_iterations):
+            time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "naive")[1]
+            time_gpu_shared = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared")[1]
+            time_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[1]
+            time_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[1]
+            time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
+
+            times_gpu_naive_it.append(times_gpu_naive)
+            times_gpu_shared_it.append(time_gpu_shared)
+            times_gpu_shared_coalesced_it.append(time_gpu_shared_coalesced)
+            times_gpu_shared_coalesced_noconst_it.append(times_gpu_shared_coalesced_noconst)
+            times_cpu_it.append(time_cpu)
+
+        times_gpu_naive.append(np.mean(times_gpu_naive_it))
+        times_gpu_shared.append(np.mean(times_gpu_shared_it))
+        times_gpu_shared_coalesced.append(np.mean(times_gpu_shared_coalesced_it))
+        times_gpu_shared_coalesced_noconst.append(np.mean(times_gpu_shared_coalesced_noconst_it))
+        times_cpu.append(np.mean(times_cpu_it))
+
+    print('GPU (naive) execution times:\n', times_gpu_naive)
+    print('GPU (shared) execution times:\n', times_gpu_shared)
+    print('GPU (shared & coalesced) execution times:\n', times_gpu_shared_coalesced)
+    print('GPU (shared & coalesced, no constant mem) execution times:\n', times_gpu_shared_coalesced_noconst)
+    print('CPU execution times:\n', times_cpu)
