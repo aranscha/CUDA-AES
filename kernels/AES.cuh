@@ -140,7 +140,7 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
 
     if (blockDim.x < 256) {
         if (threadIdx.x == 0) {
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 256; i++) {
                 rcon[i] = grcon[i];
                 sbox[i] = gsbox[i];
                 mul2[i] = gmul2[i];
@@ -154,8 +154,8 @@ __global__ void AES_shared_coalesced_noconst(char* State, char* CipherKey, const
             mul2[threadIdx.x] = gmul2[threadIdx.x];
             mul3[threadIdx.x] = gmul3[threadIdx.x];
         }
-        __syncthreads();
     }
+    __syncthreads();
 
     // Only a single thread from the thread block must calculate the ExpanedKey
     __shared__ char ExpandedKey[16 * (NR_ROUNDS + 1)];
