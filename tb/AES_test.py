@@ -6,6 +6,11 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+from tqdm import tqdm
+
+#import Python implementation of AES
+from ref.AES_Python import AES_Python
+
 class AESTest:
     def __init__(self):
         self.getSourceModule()
@@ -658,17 +663,17 @@ if __name__ == "__main__":
             time_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
 
-            times_gpu_naive_it.append(times_gpu_naive)
+            times_gpu_naive_it.append(time_gpu_naive)
             times_gpu_shared_it.append(time_gpu_shared)
             times_gpu_shared_coalesced_it.append(time_gpu_shared_coalesced)
-            times_gpu_shared_coalesced_noconst_it.append(times_gpu_shared_coalesced_noconst)
+            times_gpu_shared_coalesced_noconst_it.append(time_gpu_shared_coalesced_noconst)
             times_cpu_it.append(time_cpu)
-
-        times_gpu_naive.append(np.mean(times_gpu_naive_it))
-        times_gpu_shared.append(np.mean(times_gpu_shared_it))
-        times_gpu_shared_coalesced.append(np.mean(times_gpu_shared_coalesced_it))
-        times_gpu_shared_coalesced_noconst.append(np.mean(times_gpu_shared_coalesced_noconst_it))
-        times_cpu.append(np.mean(times_cpu_it))
+        
+        times_gpu_naive.append(sum(times_gpu_naive_it)/len(times_gpu_naive_it))
+        times_gpu_shared.append(sum(times_gpu_shared_it)/len(times_gpu_shared_it))
+        times_gpu_shared_coalesced.append(sum(times_gpu_shared_coalesced_it)/len(times_gpu_shared_coalesced_it))
+        times_gpu_shared_coalesced_noconst.append(sum(times_gpu_shared_coalesced_noconst_it)/len(times_gpu_shared_coalesced_noconst_it))
+        times_cpu.append(sum(times_cpu_it)/len(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
     print('GPU (shared) execution times:\n', times_gpu_shared)
