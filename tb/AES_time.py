@@ -6,6 +6,8 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+from tqdm import tqdm
+
 #import Python implementation of AES
 from ref.AES_Python import AES_Python
 
@@ -205,7 +207,7 @@ class AESTest:
         gridDim = (grid_size, 1, 1)
 
         # Call the kernel loaded to the device
-        if type != "AES_shared_coalesced_noconst":
+        if type != "shared_coalesced_noconst":
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
         else:
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
@@ -232,15 +234,15 @@ if __name__ == "__main__":
     aes_cpu = AES_Python()
 
     # Define the number of iterations
-    nr_iterations = 50
+    nr_iterations = 20
 
-    times_gpu_naive = np.array([])
-    times_gpu_shared = np.array([])
-    times_gpu_shared_coalesced = np.array([])
-    times_gpu_shared_coalesced_noconst = np.array([])
-    times_cpu = np.array([])
+    times_gpu_naive = []
+    times_gpu_shared = []
+    times_gpu_shared_coalesced = []
+    times_gpu_shared_coalesced_noconst = []
+    times_cpu = []
 
-    for test_size in test_sizes:
+    for test_size in tqdm(test_sizes):
         # Get test input for this case
         file = open(f"test_cases/test_case_{test_size}.txt", "r")
         hex_in = file.read()
@@ -253,11 +255,11 @@ if __name__ == "__main__":
         byte_key = bytes.fromhex(hex_key)
         byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
 
-        times_gpu_naive_it = np.array([])
-        times_gpu_shared_it = np.array([])
-        times_gpu_shared_coalesced_it = np.array([])
-        times_gpu_shared_coalesced_noconst_it = np.array([])
-        times_cpu_it = np.array([])
+        times_gpu_naive_it = []
+        times_gpu_shared_it = []
+        times_gpu_shared_coalesced_it = []
+        times_gpu_shared_coalesced_noconst_it = []
+        times_cpu_it = []
 
         for iteration in range(nr_iterations):
             time_gpu_naive = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "naive")[1]
@@ -266,17 +268,17 @@ if __name__ == "__main__":
             time_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
 
-            times_gpu_naive_it = np.append(times_gpu_naive_it, time_gpu_naive)
-            times_gpu_shared_it = np.append(times_gpu_shared_it, time_gpu_shared)
-            times_gpu_shared_coalesced_it = np.append(times_gpu_shared_it, time_gpu_shared)
-            times_gpu_shared_coalesced_noconst_it = np.append(times_gpu_shared_it_noconst, time_gpu_shared_noconst)
-            times_cpu_it = np.append(times_cpu_it, time_cpu)
+            times_gpu_naive_it.append(times_gpu_naive)
+            times_gpu_shared_it.append(time_gpu_shared)
+            times_gpu_shared_coalesced_it.append(time_gpu_shared_coalesced)
+            times_gpu_shared_coalesced_noconst_it.append(times_gpu_shared_coalesced_noconst)
+            times_cpu_it.append(time_cpu)
 
-        times_gpu_naive = np.append(times_gpu_naive, np.mean(times_gpu_naive_it))
-        times_gpu_shared = np.append(times_gpu_shared, np.mean(times_gpu_shared_it))
-        times_gpu_shared_coalesced = np.append(times_gpu_shared_coalesced, np.mean(times_gpu_shared_coalesced_it))
-        times_gpu_shared_coalesced_noconst = np.append(times_gpu_shared_coalesced_noconst, np.mean(times_gpu_shared_coalesced_noconst_it))
-        times_cpu = np.append(times_cpu, np.mean(times_cpu_it))
+        times_gpu_naive.append(np.mean(times_gpu_naive_it))
+        times_gpu_shared.append(np.mean(times_gpu_shared_it))
+        times_gpu_shared_coalesced.append(np.mean(times_gpu_shared_coalesced_it))
+        times_gpu_shared_coalesced_noconst.append(np.mean(times_gpu_shared_coalesced_noconst_it))
+        times_cpu.append(np.mean(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
     print('GPU (shared) execution times:\n', times_gpu_shared)
