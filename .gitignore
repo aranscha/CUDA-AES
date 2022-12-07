@@ -1,3 +1,4 @@
 */__pycache__/*
-tb/ref/__pycache__/AES_Python.cpython-36-pytest-7.0.1.pyc
-tb/ref/__pycache__/AES_python.cpython-36-pytest-7.0.1.pyc
+
+*.pyc
+*.pyo
