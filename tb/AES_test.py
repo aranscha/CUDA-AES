@@ -111,6 +111,11 @@ class AESTest:
         #define AES_PRIVATESTATE
         """
 
+        private_sharedlut = """
+        #define AES_PRIVATESTATE_SHAREDLUT
+        #define LUT_IN_SHARED
+        """
+
         file = open("../kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
@@ -144,7 +149,7 @@ class AESTest:
         self.module_shared_coalesced = SourceModule(shared_coalesced + kernelwrapper)
         self.module_shared_coalesced_noconst = SourceModule(shared_coalesced_noconst + kernelwrapper)
         self.module_private = SourceModule(private + kernelwrapper)
-
+        self.module_private_sharedlut = SourceModule(private_sharedlut + kernelwrapper)
 
     def AES_gpu(self, state, cipherkey, statelength, type):
         # Event objects to mark the start and end points
@@ -183,7 +188,7 @@ class AESTest:
             i_sbox_gpu = self.module_private.get_global('sbox')[0]
             i_mul2_gpu = self.module_private.get_global('mul2')[0]
             i_mul3_gpu = self.module_private.get_global('mul3')[0]
-        else:
+        else: # private_sharedlut and shared coalesced noconst
             i_rcon_gpu = cuda.mem_alloc_like(self.rcon)
             i_sbox_gpu = cuda.mem_alloc_like(self.sbox)
             i_mul2_gpu = cuda.mem_alloc_like(self.mul2)
@@ -206,8 +211,12 @@ class AESTest:
             prg = self.module_shared_coalesced.get_function("AES_shared_coalesced")
         elif type == "private":
             prg = self.module_private.get_function("AES_private")
-        else:
+        elif type == "private_sharedlut":
+            prg = self.module_private_sharedlut.get_function("AES_private_sharedlut")
+        elif type == "shared_coalesced_noconst":
             prg = self.module_shared_coalesced_noconst.get_function("AES_shared_coalesced_noconst")
+        else:
+            raise Exception("Type not found!")
 
         # Calculate block size and grid size
         block_size = (statelength - 1) // 16 + 1
@@ -220,7 +229,7 @@ class AESTest:
         gridDim = (grid_size, 1, 1)
 
         # Call the kernel loaded to the device
-        if type != "shared_coalesced_noconst":
+        if type != "shared_coalesced_noconst" and type != "private_sharedlut":
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), block=blockDim, grid=gridDim)
         else:
             prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
@@ -263,6 +272,8 @@ def test1_RoundTest():
     assert np.array_equal(result_gpu_shared_coalesced_noconst, byte_array_ref)
     result_gpu_private = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "private")[0]
     assert np.array_equal(result_gpu_private, byte_array_ref)
+    result_gpu_private_sharedlut = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, 16, "private_sharedlut")[0]
+    assert np.array_equal(result_gpu_private_sharedlut, byte_array_ref)
 
 # Test functionality on two blocks
 def test2_RoundTest():
@@ -663,6 +674,7 @@ if __name__ == "__main__":
     times_gpu_shared_coalesced = []
     times_gpu_shared_coalesced_noconst = []
     times_private = []
+    times_private_sharedlut = []
     times_cpu = []
 
     for test_size in tqdm(test_sizes):
@@ -683,6 +695,7 @@ if __name__ == "__main__":
         times_gpu_shared_coalesced_it = []
         times_gpu_shared_coalesced_noconst_it = []
         times_cpu_it = []
+        times_private_sharedlut_it = []
         times_private_it = []
 
         for iteration in range(nr_iterations):
@@ -691,6 +704,7 @@ if __name__ == "__main__":
             time_gpu_shared_coalesced = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced")[1]
             time_gpu_shared_coalesced_noconst = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "shared_coalesced_noconst")[1]
             time_private = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "private")[1]
+            time_private_sharedlut = graphicscomputer.AES_gpu(byte_array_in, byte_array_key, byte_array_in.size, "private_sharedlut")[1]
             time_cpu = aes_cpu.encrypt(hex_in, hex_key)[1]
 
             times_gpu_naive_it.append(time_gpu_naive)
@@ -698,6 +712,7 @@ if __name__ == "__main__":
             times_gpu_shared_coalesced_it.append(time_gpu_shared_coalesced)
             times_gpu_shared_coalesced_noconst_it.append(time_gpu_shared_coalesced_noconst)
             times_private_it.append(time_private)
+            times_private_sharedlut_it.append(time_private_sharedlut)
             times_cpu_it.append(time_cpu)
         
         times_gpu_naive.append(sum(times_gpu_naive_it)/len(times_gpu_naive_it))
@@ -705,6 +720,7 @@ if __name__ == "__main__":
         times_gpu_shared_coalesced.append(sum(times_gpu_shared_coalesced_it)/len(times_gpu_shared_coalesced_it))
         times_gpu_shared_coalesced_noconst.append(sum(times_gpu_shared_coalesced_noconst_it)/len(times_gpu_shared_coalesced_noconst_it))
         times_private.append(sum(times_private_it)/len(times_private_it))
+        times_private_sharedlut.append(sum(times_private_sharedlut_it)/len(times_private_sharedlut_it))
         times_cpu.append(sum(times_cpu_it)/len(times_cpu_it))
 
     print('GPU (naive) execution times:\n', times_gpu_naive)
@@ -712,4 +728,5 @@ if __name__ == "__main__":
     print('GPU (shared & coalesced) execution times:\n', times_gpu_shared_coalesced)
     print('GPU (shared & coalesced, no constant mem) execution times:\n', times_gpu_shared_coalesced_noconst)
     print('GPU (state in private memory) execution times:\n', times_private)
+    print('GPU (state in private mem, luts in shared) execution times: \n', times_private_sharedlut)
     print('CPU execution times:\n', times_cpu)
