@@ -4,7 +4,7 @@ __constant__ char sbox[256];
 
 #endif
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void SubBytes(char* block){
 #else
 __device__ void SubBytes(char* block, char* sbox){

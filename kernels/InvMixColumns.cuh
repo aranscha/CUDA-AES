@@ -5,7 +5,7 @@ __constant__ char mul3[256];
 
 # endif
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void mixColumns(char* block){
 #else
 __device__ void mixColumns(char* block, char* mul2, char* mul3){
@@ -24,7 +24,7 @@ __device__ void mixColumns(char* block, char* mul2, char* mul3){
     }
 }
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void invMixColumns(char* block){
 #else
 __device__ void invMixColumns(char* block, char* mul2, char* mul3){
@@ -40,7 +40,7 @@ __device__ void invMixColumns(char* block, char* mul2, char* mul3){
         block[4*col + 3] = block[4*col + 3] ^ v;
     }
 
-    #ifndef AES_SHARED_COALESCED_NOCONST
+    #ifndef LUT_IN_SHARED
     mixColumns(block);
     #else
     mixColumns(block, mul2, mul3)

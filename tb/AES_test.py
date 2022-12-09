@@ -104,6 +104,7 @@ class AESTest:
 
         shared_coalesced_noconst = """
         #define AES_SHARED_COALESCED_NOCONST
+        #define LUT_IN_SHARED
         """
 
         private = """

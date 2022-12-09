@@ -33,7 +33,7 @@ __device__ void RotByte(char* array)
     - array: char array of length 4
 */
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void SubByte(char* array)
 #else
 __device__ void SubByte(char* array, char* sbox)
@@ -59,7 +59,7 @@ __device__ void SubByte(char* array, char* sbox)
     - ExpandedKey: char array of length 16 * (NR_ROUNDS + 1)
 */
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey)
 #else
 __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey, char* rcon, char* sbox)
@@ -83,7 +83,7 @@ __device__ void KeyExpansion(char* CipherKey, char* ExpandedKey, char* rcon, cha
         if (i % 16 == 0)
         {
             RotByte(temp);
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
             SubByte(temp);
 #else
             SubByte(temp, sbox);

@@ -31,7 +31,7 @@ __device__ char mul3(char poly){
 }
 */
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void mixColumns(char* block){
 #else
 __device__ void mixColumns(char* block, char* mul2, char* mul3){

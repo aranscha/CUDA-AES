@@ -15,7 +15,7 @@
     - block: char array of length 16
 */
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void Round(char* block, char* roundkey)
 {
     SubBytes(block);

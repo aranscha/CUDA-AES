@@ -25,7 +25,7 @@ __constant__ char mul3[256];
     - block: char array of length 16
 */
 
-#ifndef AES_SHARED_COALESCED_NOCONST
+#ifndef LUT_IN_SHARED
 __device__ void FinalRound(char* block, char* roundkey)
 {
     SubBytes(block);
