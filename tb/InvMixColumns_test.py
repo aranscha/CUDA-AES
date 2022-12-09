@@ -47,10 +47,13 @@ class MixColumnsTest:
 
 
     def getSourceModule(self):
-        with open("../kernels/InvMixColumns.cuh",  "r") as file:
+        with open("../kernels/MixColumns.cuh",  "r") as file:
             kernelWrapper = file.read()
+        with open("../kernels/InvMixColumns.cuh",  "r") as file:
+            kernelWrapper += file.read()
 
         enable_test = r"""
+        #define TEST_MIXCOLUMNS
         #define TEST_INVMIXCOLUMNS
         """
 

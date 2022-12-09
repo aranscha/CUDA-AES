@@ -1,28 +1,4 @@
-#ifdef TEST_INVMIXCOLUMNS
-
-__constant__ char mul2[256];
-__constant__ char mul3[256];
-
-# endif
-
-#ifndef LUT_IN_SHARED
-__device__ void mixColumns(char* block){
-#else
-__device__ void mixColumns(char* block, char* mul2, char* mul3){
-#endif
-    char temp[16];
-    for (unsigned int col = 0; col < 4; col++){
-        temp[4*col] = mul2[(unsigned char) block[4*col]] ^ mul3[(unsigned char) block[4*col + 1]] ^ block[4*col + 2] ^ block[4*col + 3];
-        temp[4*col + 1] = block[4*col] ^ mul2[(unsigned char) block[4*col + 1]] ^ mul3[(unsigned char) block[4*col + 2]] ^ block[4*col + 3];
-        temp[4*col + 2] = block[4*col] ^ block[4*col + 1] ^ mul2[(unsigned char) block[4*col + 2]] ^ mul3[(unsigned char) block[4*col + 3]];
-        temp[4*col + 3] = mul3[(unsigned char) block[4*col]] ^ block[4*col + 1] ^ block[4*col + 2] ^ mul2[(unsigned char) block[4*col + 3]];
-
-    }
-
-    for (unsigned int i = 0; i < 16; i++){
-        block[i] = temp[i];
-    }
-}
+// LUTs for the tests are defined in mixColumns. This file should be compiled first, as invMixColumns is dependent on mixColumns
 
 #ifndef LUT_IN_SHARED
 __device__ void invMixColumns(char* block){
