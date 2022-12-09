@@ -1,4 +1,4 @@
-#ifdef TEST_FINALROUND
+#ifdef TEST_FINALROUND // todo: delete or write test, this is never used in the current codebase
 
 #define NR_ROUNDS 10
 

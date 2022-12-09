@@ -667,7 +667,7 @@ if __name__ == "__main__":
     aes_cpu = AES_Python()
 
     # Define the number of iterations
-    nr_iterations = 50
+    nr_iterations = 10
 
     times_gpu_naive = []
     times_gpu_shared = []
