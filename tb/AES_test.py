@@ -9,6 +9,8 @@ import pycuda.autoinit
 from tqdm import tqdm
 
 #import Python implementation of AES
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from ref.AES_Python import AES_Python
 
 class AESTest:
@@ -151,7 +153,7 @@ class AESTest:
         self.module_private = SourceModule(private + kernelwrapper)
         self.module_private_sharedlut = SourceModule(private_sharedlut + kernelwrapper)
 
-    def AES_gpu(self, state, cipherkey, statelength, type):
+    def AES_gpu(self, state, cipherkey, statelength, type, block_size=None):
         # Event objects to mark the start and end points
         start = cuda.Event()
         end = cuda.Event()
@@ -219,11 +221,14 @@ class AESTest:
             raise Exception("Type not found!")
 
         # Calculate block size and grid size
-        block_size = (statelength - 1) // 16 + 1
-        grid_size = 1
-        if (block_size > 1024):
-            block_size = 1024
-            grid_size = (statelength - 1) // (1024 * 16) + 1;
+        if block_size is None:
+            block_size = (statelength - 1) // 16 + 1
+            grid_size = 1
+            if (block_size > 1024):
+                block_size = 1024
+                grid_size = (statelength - 1) // (1024 * 16) + 1
+        else:
+            grid_size = (statelength - 1) // (block_size * 16) + 1
 
         blockDim = (block_size, 1, 1)
         gridDim = (grid_size, 1, 1)

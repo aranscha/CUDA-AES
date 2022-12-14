@@ -2,3 +2,5 @@
 
 *.pyc
 *.pyo
+
+tb/test_cases/*.txt
