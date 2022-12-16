@@ -53,12 +53,12 @@ class AddRoundKeyTest:
         # Start recording execution time
         start.record()
 
+        # Call the kernel loaded to the device
+        prg(io_message_gpu, i_roundkey_gpu, np.uint32(length), block=blockDim, grid=gridDim)
+
         # Record execution time (including memory transfers)
         end.record()
         end.synchronize()
-
-        # Call the kernel loaded to the device
-        prg(io_message_gpu, i_roundkey_gpu, np.uint32(length), block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(message)
