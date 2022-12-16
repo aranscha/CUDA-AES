@@ -1,0 +1,23 @@
+==PROF== Connected to process 5303 (/usr/bin/python3.6)
+==PROF== Profiling "AES_naive" - 1: 0%....50%....100% - 13 passes
+==PROF== Profiling "AES_shared" - 2: 0%....50%....100% - 13 passes
+==PROF== Profiling "AES_shared_coalesced" - 3: 0%....50%....100% - 13 passes
+==PROF== Profiling "AES_shared_coalesced_noconst" - 4: 0%....50%....100% - 13 passes
+==PROF== Profiling "AES_private" - 5: 0%....50%....100% - 13 passes
+==PROF== Profiling "AES_private_sharedlut" - 6: 0%....50%....100%GPU (naive) execution times:
+ [2.228115234375]
+GPU (shared) execution times:
+ [1.7342723388671875]
+GPU (shared & coalesced) execution times:
+ [1.7095450439453126]
+GPU (shared & coalesced, no constant mem) execution times:
+ [0.8183189086914062]
+GPU (state in private memory) execution times:
+ [1.7184283447265625]
+GPU (state in private mem, luts in shared) execution times: 
+ [0.8167811889648438]
+CPU execution times:
+ [0.19158148765563965]
+ - 13 passes
+==PROF== Disconnected from process 5303
+==PROF== Report: metrics.nsight-cuprof-report

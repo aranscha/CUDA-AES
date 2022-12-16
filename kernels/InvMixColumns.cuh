@@ -19,7 +19,7 @@ __device__ void invMixColumns(char* block, char* mul2, char* mul3){
     #ifndef LUT_IN_SHARED
     mixColumns(block);
     #else
-    mixColumns(block, mul2, mul3)
+    mixColumns(block, mul2, mul3);
     #endif
 }
 

@@ -26,6 +26,7 @@ __device__ void Round(char* block, char* roundkey)
 #else
 __device__ void Round(char* block, char* roundkey, char* sbox, char* mul2, char* mul3)
 {
+    // printf("%x \n", *roundkey);
     SubBytes(block, sbox);
     ShiftRows(block);
     mixColumns(block, mul2, mul3);
