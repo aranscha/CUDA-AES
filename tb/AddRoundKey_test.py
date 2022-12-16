@@ -6,6 +6,8 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+from scipy import stats
+
 class AddRoundKeyTest:
     def __init__(self):
         self.getSourceModule()
@@ -26,9 +28,6 @@ class AddRoundKeyTest:
         # Event objects to mark the start and end points
         start = cuda.Event()
         end = cuda.Event()
-
-        # Start recording execution time
-        start.record()
 
         # Device memory allocation for input and output arrays
         io_message_gpu = cuda.mem_alloc_like(message)
@@ -51,16 +50,19 @@ class AddRoundKeyTest:
         blockDim = (block_size, 1, 1)
         gridDim = (grid_size, 1, 1)
 
+        # Start recording execution time
+        start.record()
+
+        # Record execution time (including memory transfers)
+        end.record()
+        end.synchronize()
+
         # Call the kernel loaded to the device
         prg(io_message_gpu, i_roundkey_gpu, np.uint32(length), block=blockDim, grid=gridDim)
 
         # Copy result from device to the host
         res = np.empty_like(message)
         cuda.memcpy_dtoh(res, io_message_gpu)
-
-        # Record execution time (including memory transfers)
-        end.record()
-        end.synchronize()
 
         # return a tuple of output of sine computation and time taken to execute the operation (in ms).
         return res, start.time_till(end) * 10 ** (-3)
@@ -82,8 +84,11 @@ def test1_AddRoundKeyTest():
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
 
     graphicscomputer = AddRoundKeyTest()
-    result_gpu = graphicscomputer.addroundkey_gpu(byte_array_in1, byte_array_in2, byte_array_in1.size)[0]
+    result_gpu, time = graphicscomputer.addroundkey_gpu(byte_array_in1, byte_array_in2, byte_array_in1.size)
+
     assert np.array_equal(result_gpu, byte_array_ref)
+
+    return time
 
 def test2_AddRoundKeyTest():
     # Input arrays
@@ -103,3 +108,14 @@ def test2_AddRoundKeyTest():
     graphicscomputer = AddRoundKeyTest()
     result_gpu = graphicscomputer.addroundkey_gpu(byte_array_in1, byte_array_in2, byte_array_in1.size)[0]
     assert np.array_equal(result_gpu, byte_array_ref)
+
+
+if __name__ == '__main__':
+    times = []
+    for i in range(1000):
+        times.append(test1_AddRoundKeyTest())
+    times = np.array(times)
+    avg = np.mean(times)
+    std = np.std(times)
+    print(stats.describe(times))
+    print(f"Average execution time thread: {avg}, std: {std}")

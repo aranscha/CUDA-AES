@@ -3,6 +3,8 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+from scipy import stats
+
 class MixColumnsTest:
     def __init__(self):
         self.getSourceModule()
@@ -60,9 +62,6 @@ class MixColumnsTest:
         start = cuda.Event()
         end = cuda.Event()
 
-        # Start recording execution time
-        start.record()
-
         # Device memory allocation for input and output arrays
         io_message_gpu = cuda.mem_alloc_like(message)
         i_mem2_gpu = self.module.get_global('mul2')[0]
@@ -86,16 +85,19 @@ class MixColumnsTest:
         blockDim = (block_size, 1, 1)
         gridDim = (grid_size, 1, 1)
 
+        # Start recording execution time
+        start.record()
+
         # Call the kernel loaded to the device
         prg(io_message_gpu, np.uint32(length), block=blockDim, grid=gridDim)
-
-        # Copy result from device to the host
-        res = np.empty_like(message)
-        cuda.memcpy_dtoh(res, io_message_gpu)
 
         # Record execution time (including memory transfers)
         end.record()
         end.synchronize()
+
+        # Copy result from device to the host
+        res = np.empty_like(message)
+        cuda.memcpy_dtoh(res, io_message_gpu)
 
         # return a tuple of output of sine computation and time taken to execute the operation (in ms).
         return res, start.time_till(end) * 1e-3
@@ -144,13 +146,11 @@ def test1_mixColumns():
     byte_array_ref = np.frombuffer(byte_ref, dtype=np.byte)
     
     graphicsComputer = MixColumnsTest()
-    result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
-
-    print(byte_array_ref)
-    print(byte_array_in)
-    print(result_gpu)
+    result_gpu, time = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
 
     assert np.array_equal(result_gpu, byte_array_ref)
+
+    return time
 
 def test2_mixColumns():
     # input array
@@ -166,8 +166,15 @@ def test2_mixColumns():
     graphicsComputer = MixColumnsTest()
     result_gpu, _ = graphicsComputer.mixcolumns_gpu(byte_array_in, byte_array_in.size)
 
-    print(byte_array_ref)
-    # print(byte_array_in)
-    print(result_gpu)
-
     assert np.array_equal(result_gpu, byte_array_ref)
+
+
+if __name__ == '__main__':
+    times = []
+    for i in range(1000):
+        times.append(test1_mixColumns())
+    times = np.array(times)
+    avg = np.mean(times)
+    std = np.std(times)
+    print(stats.describe(times))
+    print(f"Average execution time thread: {avg}, std: {std}")
