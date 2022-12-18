@@ -2,8 +2,6 @@
 This file contains the best performing AES encryption implementation and corresponding
 decryption implementation, and the helper functions to easily encrypt and decrypt files
 using this class by running this script. 
-
-# TODO: add more documentation on how to run the script
 '''
 
 import numpy as np
