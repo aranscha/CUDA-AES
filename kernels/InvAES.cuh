@@ -60,12 +60,11 @@ __global__ void inv_AES(char* state, char* cipherKey, const unsigned int stateLe
     // Each thread handles 16 bytes (a single block) of the State
     if (index + 16 <= stateLength)
     {
-        AddRoundKey(stateLocal, ExpandedKey);
+        AddRoundKey(stateLocal, ExpandedKey + 16 * NR_ROUNDS);
         for (int i = 1; i < NR_ROUNDS; i++){
-            printf("%d \n", 0);
-            InvRound(stateLocal, ExpandedKey + 16 * i, invsbox, mul2, mul3);
+            InvRound(stateLocal, ExpandedKey + 16*NR_ROUNDS - 16*i, invsbox, mul2, mul3); // now run through the expanded key in reverse!
         }
-        InvFinalRound(stateLocal, ExpandedKey + 16 * NR_ROUNDS, sbox);
+        InvFinalRound(stateLocal, ExpandedKey, invsbox);
     }
 
     __syncthreads();

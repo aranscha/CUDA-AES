@@ -11,9 +11,11 @@ import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.autoinit
 
+import sys
+
 
 class AES:
-    def __init__(self) -> None:
+    def __init__(self):
         self.get_source_module_encrypt()
         self.get_source_module_decrypt()
 
@@ -120,38 +122,64 @@ class AES:
         #define LUT_IN_SHARED
         """
 
-        file = open("../kernels/general.cuh", "r")
+        file = open("kernels/general.cuh", "r")
         kernelwrapper = file.read()
         file.close()
-        file = open("../kernels/SubBytes.cuh", "r")
+        file = open("kernels/SubBytes.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/ShiftRows.cuh", "r")
+        file = open("kernels/ShiftRows.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/MixColumns.cuh", "r")
+        file = open("kernels/MixColumns.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/AddRoundKey.cuh", "r")
+        file = open("kernels/AddRoundKey.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/Round.cuh", "r")
+        file = open("kernels/Round.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/KeyExpansion.cuh", "r")
+        file = open("kernels/KeyExpansion.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/FinalRound.cuh", "r")
+        file = open("kernels/FinalRound.cuh", "r")
         kernelwrapper += file.read()
         file.close()
-        file = open("../kernels/AES.cuh", "r")
+        file = open("kernels/AES.cuh", "r")
         kernelwrapper += file.read()
         file.close()
 
         self.module_encrypt = SourceModule(private_sharedlut + kernelwrapper)
 
     def get_source_module_decrypt(self):
-        pass # first make sure the decryption test is succesful ;) # TODO
+        sharedLut = """
+        #define LUT_IN_SHARED
+        """
+
+        with open("kernels/general.cuh", "r") as f:
+            kernelwrapper = f.read()
+        with open("kernels/InvSubbytes.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/InvShiftRows.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/MixColumns.cuh", "r") as f: # inv Mix Columns depends on mix Columns!
+            kernelwrapper += f.read()
+        with open("kernels/InvMixColumns.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/AddRoundKey.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/InvRound.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/KeyExpansion.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/InvFinalRound.cuh", "r") as f:
+            kernelwrapper += f.read()
+        with open("kernels/InvAES.cuh", "r") as f:
+            kernelwrapper += f.read()
+
+        self.module_decrpyt = SourceModule(sharedLut + kernelwrapper)
+
 
     def encrypt_gpu(self, state, cipherkey, statelength, block_size=None):
         # Pad the message so its length is a multiple of 16 bytes
@@ -198,3 +226,95 @@ class AES:
         cuda.memcpy_dtoh(res, io_state_gpu)
 
         return res
+    
+    def decrypt_gpu(self, state, cipherkey, statelength, block_size=None):
+        # Pad the message so its length is a multiple of 16 bytes
+        if (statelength % 16 != 0):
+            padding = np.zeros(16 - statelength % 16, state.dtype)
+            state = np.append(state, padding)
+            statelength += 16 - statelength % 16
+        
+        # device memory allocation
+        io_state_gpu = cuda.mem_alloc_like(state)
+        i_cipherkey_gpu = cuda.mem_alloc_like(cipherkey)
+        i_rcon_gpu = cuda.mem_alloc_like(self.rcon)
+        i_sbox_gpu = cuda.mem_alloc_like(self.sbox)
+        i_invsbox_gpu = cuda.mem_alloc_like(self.invSbox)
+        i_mul2_gpu = cuda.mem_alloc_like(self.mul2)
+        i_mul3_gpu = cuda.mem_alloc_like(self.mul3)
+        
+        cuda.memcpy_htod(io_state_gpu, state)
+        cuda.memcpy_htod(i_cipherkey_gpu, cipherkey)
+        cuda.memcpy_htod(i_rcon_gpu, self.rcon)
+        cuda.memcpy_htod(i_sbox_gpu, self.sbox)
+        cuda.memcpy_htod(i_invsbox_gpu, self.invSbox)
+        cuda.memcpy_htod(i_mul2_gpu, self.mul2)
+        cuda.memcpy_htod(i_mul3_gpu, self.mul3)
+
+        # Calculate block size and grid size
+        if block_size is None:
+            block_size = (statelength - 1) // 16 + 1
+            grid_size = 1
+            if (block_size > 1024):
+                block_size = 1024
+                grid_size = (statelength - 1) // (1024 * 16) + 1
+        else:
+            grid_size = (statelength - 1) // (block_size * 16) + 1
+
+        blockDim = (block_size, 1, 1)
+        gridDim = (grid_size, 1, 1)
+
+        # call kernel
+        prg = self.module_decrpyt.get_function("inv_AES")
+        prg(io_state_gpu, i_cipherkey_gpu, np.uint32(statelength), i_rcon_gpu, i_sbox_gpu,  i_invsbox_gpu, i_mul2_gpu, i_mul3_gpu, block=blockDim, grid=gridDim)
+
+        # Copy result from device to the host
+        res = np.empty_like(state)
+        cuda.memcpy_dtoh(res, io_state_gpu)
+
+        return res
+
+
+
+if __name__== "__main__":
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
+        raise Exception("Invalid number of input arguments")
+    if len(sys.argv) == 3:
+        print("warning: decrypt output file not specified. Will only output encrypted input!")
+
+    # read in input file and convert to hex
+    print(f"Reading input from {sys.argv[1]} ...")
+    with open(sys.argv[1], "r") as f:
+        input = f.read()
+    input = input.encode('utf-8')
+    hex_str = input.hex()
+    byte_in = bytes.fromhex(hex_str)
+    byte_array_in = np.frombuffer(byte_in, dtype=np.byte)
+
+    # Get random key
+    hex_key = "000102030405060708090a0b0c0d0e0f"
+    byte_key = bytes.fromhex(hex_key)
+    byte_array_key = np.frombuffer(byte_key, dtype=np.byte)
+
+    # get encoder and encode
+    print("Encrypting the input...")
+    computer = AES()
+    out = computer.encrypt_gpu(byte_array_in, byte_array_key, byte_array_in.size)
+    out_hex = bytes(out).hex()
+    print("Encryption complete!")
+
+    # write output to output file
+    print(f"Writing output to {sys.argv[2]} ...")
+    with open(sys.argv[2], "w") as f:
+        f.write(out_hex)
+
+    if len(sys.argv) == 4:
+        print("Decrypting the encrypted input...")
+        in_decrpyted = computer.decrypt_gpu(out, byte_array_key, out.size)
+        in_decrpyted = "".join([chr(item) for item in in_decrpyted])
+        in_decrpyted = in_decrpyted[:len(input)] # cut off the padding (assume that the length of the input is known)
+
+        # write decrpyted ouptput
+        print(f"Writing decrypted input to {sys.argv[3]}")
+        with open(sys.argv[3], "w") as f:
+            f.write(in_decrpyted)

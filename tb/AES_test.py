@@ -674,8 +674,7 @@ def test7_RoundTest():
 # Measure timing for different sizes of messages
 if __name__ == "__main__":
     # Test sizes
-    # test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864]
-    test_sizes = [67108864]
+    test_sizes = [16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864]
 
     # Create an instance of the AESTest class
     graphicscomputer = AESTest()
@@ -683,7 +682,7 @@ if __name__ == "__main__":
     aes_cpu = AES_Python()
 
     # Define the number of iterations
-    nr_iterations = 1
+    nr_iterations = 10
 
     times_gpu_naive = []
     times_gpu_shared = []

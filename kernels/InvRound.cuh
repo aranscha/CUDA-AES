@@ -7,7 +7,6 @@ __device__ void InvRound(char* block, char* roundKey){
 }
 #else
 __device__ void InvRound(char* block, char* roundKey, char* invSbox, char* mul2, char* mul3){
-    // printf("%x \n", *roundKey);
     InvShiftRows(block);
     InvSubBytes(block, invSbox);
     AddRoundKey(block, roundKey);
