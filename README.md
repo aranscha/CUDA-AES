@@ -1,6 +1,6 @@
 # High-throughput Implementation of the Advanced Encryption Standard Using a GPU
 ## Abstract
-Recently, GPUs have become a go-to solution for accelerating demanding applications. In this work, the authors present a parallel implementation of the Advanced Encryption Standard (AES), using the PyCUDA framework. It was investigated how to map the resources required for this algorithm onto the CUDA memory hierarchy to achieve the best possible performance. The different versions were compared and profiled. For input data larger than 1MB, every version is faster than an existing CPU-based implementation. The best implementation was found to be 6x faster compared to the CPU for large files, and has a throughput of 20.54Gbps. Detailed results and a description of the system configuration can be found in the `E4750_2021Fall_PAES_anr2157_rd3033.report.pdf` file.
+Recently, GPUs have become a go-to solution for accelerating demanding applications. In this work, the authors present a parallel implementation of the Advanced Encryption Standard (AES), using the PyCUDA framework. It was investigated how to map the resources required for this algorithm onto the CUDA memory hierarchy to achieve the best possible performance. The different versions were compared and profiled. For input data larger than 1MB, every version is faster than an existing CPU-based implementation. The best implementation was found to be 6x faster compared to the CPU for large files, and has a throughput of 20.54Gbps. Detailed results and a description of the system configuration can be found in the `E4750_2022Fall_PAES_anr2157_rd3033.report.pdf` file.
 
 ## Dependencies
 It is recommended to use Python 3.6.9 when running the code.
@@ -44,7 +44,7 @@ tqdm                4.64.1
 │   └── general.cuh
 ├── profiling_reports
 │   └── metrics.nsight-cuprof-report
-├── E4750_2021Fall_PAES_anr2157_rd3033.report.pdf
+├── E4750_2022Fall_PAES_anr2157_rd3033.report.pdf
 ├── ref
 │   ├── AES_Python.py
 │   ├── __init__.py
