@@ -74,8 +74,7 @@ Tests were written for all operations, including the inverse operations. These a
 foo@bar:~/tb$ pytest
 ```
 
-Note that if you want to run the timing experiments yourself, it is required to run the `create_test_cases.py` file first to generate the random input files.
-Running all tests should take about 30s.
+Note that if you want to run the timing experiments yourself, it is required to run the `create_test_cases.py` file first to generate the random input files. Generating these files takes about 20 minutes. Running all tests should take about 30s.
 
 ## Encrypting and Decrypyting a `.txt` file
 You can encrypt and decrypt any `.txt` file by using the `AES.py` script as follows:
