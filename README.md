@@ -13,6 +13,7 @@ pycuda              2019.1.2
 pytest              7.0.1
 tqdm                4.64.1
 ```
+Note that when running a file that also calls a function from the `cryptography` library, you could get a warning that the version is deprecated. You can simply ignore this however, as it shouldn't affect the results of the code.
 
 ## Repository Outline
 ```bash
